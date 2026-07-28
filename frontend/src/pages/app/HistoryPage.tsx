@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { historyService } from '@/services/history-service';
-import type { HistoryItemResponse } from '@/types/api';
+import { marketService } from '@/services/market-service';
+import type { HistoryItemResponse, MarketRegimeView } from '@/types/api';
 import { formatDate, formatVND, getRecommendationStatusMeta, getRecommendationTypeLabel } from '@/utils/formatters';
 import { MarketRegimeBadge } from '@/components/common/MarketRegimeBadge';
+import { LiveDemoPageHeader } from '@/components/common/LiveDemoPageHeader';
 import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
 import { ErrorState } from '@/components/common/ErrorState';
 import { EmptyState } from '@/components/common/EmptyState';
@@ -10,6 +12,7 @@ import { History as HistoryIcon } from 'lucide-react';
 
 export const HistoryPage: React.FC = () => {
   const [historyItems, setHistoryItems] = useState<HistoryItemResponse[]>([]);
+  const [currentRegime, setCurrentRegime] = useState<MarketRegimeView | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -17,8 +20,12 @@ export const HistoryPage: React.FC = () => {
     try {
       setIsLoading(true);
       setErrorMessage(null);
-      const res = await historyService.list(1, 50);
+      const [res, regime] = await Promise.all([
+        historyService.list(1, 50),
+        marketService.getCurrentRegime().catch(() => null),
+      ]);
       setHistoryItems(res.items || []);
+      setCurrentRegime(regime);
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'message' in err) {
         setErrorMessage((err as { message: string }).message);
@@ -48,12 +55,11 @@ export const HistoryPage: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
-      <div>
-        <h2 className="text-2xl font-black text-slate-900">Lịch sử Hoạt động System Audit</h2>
-        <p className="text-xs text-slate-500 font-medium">
-          Nhật ký ghi nhận các quyết định tư vấn, rebalance và cập nhật chế độ thị trường
-        </p>
-      </div>
+      <LiveDemoPageHeader
+        title="Lịch sử Hoạt động System Audit"
+        description="Nhật ký các quyết định tư vấn, tái cân bằng và cập nhật tín hiệu thị trường — minh bạch theo từng thời điểm."
+        regime={currentRegime}
+      />
 
       {historyItems.length === 0 ? (
         <EmptyState title="Chưa có lịch sử" description="Chưa tìm thấy nhật ký hoạt động nào." />

@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { portfolioService } from '@/services/portfolio-service';
+import { marketService } from '@/services/market-service';
 import type {
+  MarketRegimeView,
   PortfolioPerformanceResponse,
   PortfolioResponse,
   PortfolioVersionsResponse,
@@ -13,6 +15,7 @@ import {
   formatVND,
 } from '@/utils/formatters';
 import { DonutChart } from '@/components/common/DonutChart';
+import { LiveDemoPageHeader } from '@/components/common/LiveDemoPageHeader';
 import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
 import { ErrorState } from '@/components/common/ErrorState';
 import {
@@ -25,6 +28,7 @@ export const PortfolioPage: React.FC = () => {
   const [portfolio, setPortfolio] = useState<PortfolioResponse | null>(null);
   const [performance, setPerformance] = useState<PortfolioPerformanceResponse | null>(null);
   const [versions, setVersions] = useState<PortfolioVersionsResponse | null>(null);
+  const [currentRegime, setCurrentRegime] = useState<MarketRegimeView | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -37,15 +41,17 @@ export const PortfolioPage: React.FC = () => {
       setIsLoading(true);
       setErrorMessage(null);
 
-      const [pData, perfData, vData] = await Promise.all([
+      const [pData, perfData, vData, regimeData] = await Promise.all([
         portfolioService.getCurrent(),
         portfolioService.getPerformance(),
         portfolioService.getVersions(),
+        marketService.getCurrentRegime().catch(() => null),
       ]);
 
       setPortfolio(pData);
       setPerformance(perfData);
       setVersions(vData);
+      setCurrentRegime(regimeData);
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'message' in err) {
         setErrorMessage((err as { message: string }).message);
@@ -133,20 +139,16 @@ export const PortfolioPage: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-black text-slate-900">Chi tiết Danh mục Đầu tư</h2>
-          <p className="text-xs text-slate-500 font-medium">
-            Tên danh mục: {portfolio?.name || 'Astera AI Portfolio'} • Phiên bản hiện tại: v
-            {portfolio?.currentVersion}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
+      <LiveDemoPageHeader
+        title="Chi tiết Danh mục Đầu tư"
+        description={`Danh mục ${portfolio?.name || 'Astera AI Portfolio'} • Phiên bản hiện tại v${portfolio?.currentVersion || 1}. Theo dõi phân bổ, PnL và lịch sử thay đổi danh mục.`}
+        regime={currentRegime}
+        actions={
+          <>
           <button
             onClick={handleRecalculate}
             disabled={isActionLoading}
-            className="px-4 py-2.5 rounded-full border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 transition-colors flex items-center gap-1.5 disabled:opacity-40"
+            className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-white/20 disabled:opacity-40"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Tính lại danh mục</span>
@@ -155,13 +157,14 @@ export const PortfolioPage: React.FC = () => {
           <button
             onClick={handleRebalance}
             disabled={isActionLoading}
-            className="btn-primary text-white text-xs font-bold px-6 py-2.5 rounded-full flex items-center gap-2 shadow-md hover:-translate-y-0.5 transition-all disabled:opacity-40"
+            className="flex items-center gap-2 rounded-full bg-blue-600 px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-blue-900/30 transition-all hover:-translate-y-0.5 hover:bg-blue-500 disabled:opacity-40"
           >
             <Sparkles className="w-4 h-4" />
             <span>Tái cân bằng (Rebalance)</span>
           </button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-1">

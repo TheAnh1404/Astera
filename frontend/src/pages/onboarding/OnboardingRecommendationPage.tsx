@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { recommendationService } from '@/services/recommendation-service';
-import type { RecommendationResponse } from '@/types/api';
+import { marketService } from '@/services/market-service';
+import type { MarketRegimeView, RecommendationResponse } from '@/types/api';
 import {
   formatDate,
   formatPercent,
@@ -12,14 +13,16 @@ import {
 } from '@/utils/formatters';
 import { DonutChart } from '@/components/common/DonutChart';
 import { MarketRegimeBadge } from '@/components/common/MarketRegimeBadge';
+import { LiveDemoPageHeader } from '@/components/common/LiveDemoPageHeader';
 import { DisclaimerModal } from '@/components/common/DisclaimerModal';
 import { ErrorState } from '@/components/common/ErrorState';
 import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
-import { Check, Edit3, ShieldAlert, Sparkles } from 'lucide-react';
+import { Check, Edit3, ShieldAlert } from 'lucide-react';
 
 export const OnboardingRecommendationPage: React.FC = () => {
   const { recommendationId } = useParams<{ recommendationId: string }>();
   const [recommendation, setRecommendation] = useState<RecommendationResponse | null>(null);
+  const [currentRegime, setCurrentRegime] = useState<MarketRegimeView | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -34,8 +37,12 @@ export const OnboardingRecommendationPage: React.FC = () => {
     try {
       setIsLoading(true);
       setErrorMessage(null);
-      const res = await recommendationService.get(recommendationId);
+      const [res, regime] = await Promise.all([
+        recommendationService.get(recommendationId),
+        marketService.getCurrentRegime().catch(() => null),
+      ]);
       setRecommendation(res);
+      setCurrentRegime(regime);
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'message' in err) {
         setErrorMessage((err as { message: string }).message);
@@ -118,23 +125,16 @@ export const OnboardingRecommendationPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-surface-bright p-4 md:p-8 flex flex-col items-center py-10">
       <div className="w-full max-w-5xl space-y-8 animate-in fade-in duration-300">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-extrabold uppercase">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Bước 2: Kết quả Đề xuất AI</span>
-            </div>
-            <h2 className="text-3xl font-black text-slate-900">Danh mục Tối ưu Khuyến nghị</h2>
-            <p className="text-xs text-slate-500 font-medium">
-              Khởi tạo ngày {formatDate(recommendation.generatedAt)} • Hết hạn:{' '}
-              {formatDate(recommendation.expiresAt)}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
+        <LiveDemoPageHeader
+          eyebrow="BƯỚC 2 • KẾT QUẢ ĐỀ XUẤT AI"
+          title="Danh mục Tối ưu Khuyến nghị"
+          description={`Khởi tạo ngày ${formatDate(recommendation.generatedAt)} • Hết hạn ${formatDate(recommendation.expiresAt)}. Kiểm tra tỷ trọng và lý do phân bổ trước khi khởi tạo danh mục.`}
+          regime={currentRegime}
+          actions={
+            <>
             <button
               onClick={() => navigate('/onboarding/profile')}
-              className="px-4 py-2.5 rounded-full border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 transition-colors flex items-center gap-1.5"
+              className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-white/20"
             >
               <Edit3 className="w-4 h-4" />
               <span>Sửa hồ sơ</span>
@@ -142,13 +142,14 @@ export const OnboardingRecommendationPage: React.FC = () => {
 
             <button
               onClick={() => setIsDisclaimerOpen(true)}
-              className="btn-primary text-white text-xs font-bold px-7 py-3 rounded-full flex items-center gap-2 shadow-md hover:-translate-y-0.5 transition-all"
+              className="flex items-center gap-2 rounded-full bg-blue-600 px-7 py-3 text-xs font-bold text-white shadow-lg shadow-blue-900/30 transition-all hover:-translate-y-0.5 hover:bg-blue-500"
             >
               <Check className="w-4 h-4" />
               <span>Xác nhận danh mục</span>
             </button>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">

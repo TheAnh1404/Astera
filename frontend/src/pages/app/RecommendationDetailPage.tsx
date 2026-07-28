@@ -3,7 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { recommendationService } from '@/services/recommendation-service';
 import { portfolioService } from '@/services/portfolio-service';
-import type { PortfolioResponse, RecommendationResponse } from '@/types/api';
+import { marketService } from '@/services/market-service';
+import type { MarketRegimeView, PortfolioResponse, RecommendationResponse } from '@/types/api';
 import {
   formatDate,
   formatPercent,
@@ -14,6 +15,7 @@ import {
 } from '@/utils/formatters';
 import { DonutChart } from '@/components/common/DonutChart';
 import { MarketRegimeBadge } from '@/components/common/MarketRegimeBadge';
+import { LiveDemoPageHeader } from '@/components/common/LiveDemoPageHeader';
 import { DisclaimerModal } from '@/components/common/DisclaimerModal';
 import { ConfirmActionModal } from '@/components/common/ConfirmActionModal';
 import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
@@ -24,6 +26,7 @@ export const RecommendationDetailPage: React.FC = () => {
   const { recommendationId } = useParams<{ recommendationId: string }>();
   const [recommendation, setRecommendation] = useState<RecommendationResponse | null>(null);
   const [currentPortfolio, setCurrentPortfolio] = useState<PortfolioResponse | null>(null);
+  const [currentRegime, setCurrentRegime] = useState<MarketRegimeView | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -41,13 +44,15 @@ export const RecommendationDetailPage: React.FC = () => {
       setIsLoading(true);
       setErrorMessage(null);
 
-      const [recData, pData] = await Promise.all([
+      const [recData, pData, regimeData] = await Promise.all([
         recommendationService.get(recommendationId),
         portfolioService.getCurrent().catch(() => null),
+        marketService.getCurrentRegime().catch(() => null),
       ]);
 
       setRecommendation(recData);
       setCurrentPortfolio(pData);
+      setCurrentRegime(regimeData);
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'message' in err) {
         setErrorMessage((err as { message: string }).message);
@@ -162,29 +167,21 @@ export const RecommendationDetailPage: React.FC = () => {
         <span>Quay lại Danh sách Đề xuất</span>
       </Link>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-black text-slate-900">
-              {getRecommendationTypeLabel(recommendation.type)}
-            </h2>
-            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${statusMeta.bg}`}>
-              {statusMeta.label}
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 font-medium">
-            Ngày khởi tạo: {formatDate(recommendation.generatedAt)} • Hết hạn:{' '}
-            {formatDate(recommendation.expiresAt)}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
+      <LiveDemoPageHeader
+        title={getRecommendationTypeLabel(recommendation.type)}
+        description={`Khởi tạo ngày ${formatDate(recommendation.generatedAt)} • Hết hạn ${formatDate(recommendation.expiresAt)}. Kiểm tra tín hiệu và thay đổi tỷ trọng trước khi xác nhận.`}
+        regime={currentRegime}
+        actions={
+          <>
+          <span className={`rounded-full border px-3 py-1.5 text-xs font-bold ${statusMeta.bg}`}>
+            {statusMeta.label}
+          </span>
           {recommendation.status === 'GENERATED' && (
             <>
               <button
                 onClick={() => setIsDismissModalOpen(true)}
                 disabled={isSubmitting}
-                className="px-4 py-2.5 rounded-full border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 transition-colors flex items-center gap-1.5"
+                className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-white/20"
               >
                 <X className="w-4 h-4" />
                 <span>Bỏ qua</span>
@@ -193,7 +190,7 @@ export const RecommendationDetailPage: React.FC = () => {
               <button
                 onClick={() => setIsDisclaimerOpen(true)}
                 disabled={isSubmitting}
-                className="btn-primary text-white text-xs font-bold px-6 py-2.5 rounded-full flex items-center gap-2 shadow-md hover:-translate-y-0.5 transition-all"
+                className="flex items-center gap-2 rounded-full bg-blue-600 px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-blue-900/30 transition-all hover:-translate-y-0.5 hover:bg-blue-500"
               >
                 <Check className="w-4 h-4" />
                 <span>Xác nhận danh mục</span>
@@ -205,14 +202,15 @@ export const RecommendationDetailPage: React.FC = () => {
             <button
               onClick={handleRecalculate}
               disabled={isSubmitting}
-              className="btn-primary text-white text-xs font-bold px-6 py-2.5 rounded-full flex items-center gap-2 shadow-md"
+              className="flex items-center gap-2 rounded-full bg-blue-600 px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-blue-900/30"
             >
               <RotateCcw className="w-4 h-4" />
               <span>Tính lại danh mục mới</span>
             </button>
           )}
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">

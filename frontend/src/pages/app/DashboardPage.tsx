@@ -18,6 +18,7 @@ import {
 } from '@/utils/formatters';
 import { DonutChart } from '@/components/common/DonutChart';
 import { MarketRegimeBadge } from '@/components/common/MarketRegimeBadge';
+import { LiveDemoPageHeader } from '@/components/common/LiveDemoPageHeader';
 import { PerformanceChart } from '@/components/common/PerformanceChart';
 import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
 import { ErrorState } from '@/components/common/ErrorState';
@@ -49,7 +50,7 @@ export const DashboardPage: React.FC = () => {
       const [pData, perfData, regimeData, recListData] = await Promise.all([
         portfolioService.getCurrent(),
         portfolioService.getPerformance(),
-        marketService.getCurrentRegime(),
+        marketService.getCurrentRegime().catch(() => null),
         recommendationService.list(1, 10),
       ]);
 
@@ -127,6 +128,21 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
+      <LiveDemoPageHeader
+        title="Tổng quan Danh mục"
+        description="Theo dõi NAV, hiệu suất, tỷ trọng cổ phiếu và tín hiệu thị trường trong cùng một bảng điều khiển đầu tư."
+        regime={currentRegime}
+        actions={
+          <Link
+            to="/app/recommendations"
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white shadow-lg shadow-blue-600/20 transition-colors hover:bg-blue-500"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Xem đề xuất AI
+          </Link>
+        }
+      />
+
       {pendingRecommendation ? (
         <div className="p-5 rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">

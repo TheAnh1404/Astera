@@ -4,8 +4,11 @@ import { useAuth } from '@/context/AuthContext';
 import { marketService } from '@/services/market-service';
 import { MarketRegimeBadge } from '@/components/common/MarketRegimeBadge';
 import type { MarketRegimeView } from '@/types/api';
+import { formatDate } from '@/utils/formatters';
 import {
+  Activity,
   Bell,
+  Calendar,
   ChevronDown,
   Clock,
   LayoutDashboard,
@@ -200,7 +203,7 @@ export const MainLayout: React.FC = () => {
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 bg-white border-b border-slate-200/80 px-4 md:px-8 flex items-center justify-between sticky top-0 z-20 shadow-xs">
+        <header className="min-h-20 bg-white border-b border-slate-200/80 px-4 py-3 md:px-8 flex items-center justify-between sticky top-0 z-20 shadow-xs">
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setMobileDrawerOpen(true)}
@@ -208,14 +211,33 @@ export const MainLayout: React.FC = () => {
             >
               <Menu className="w-5 h-5" />
             </button>
-            <h1 className="text-base md:text-lg font-extrabold text-slate-900 truncate">
-              {getPageTitle()}
-            </h1>
+            <div className="min-w-0 space-y-0.5">
+              <div className="hidden sm:flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">
+                <span className="inline-flex items-center gap-1.5 text-emerald-600">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+                  AI Brain Engine Active
+                </span>
+                <span className="text-slate-300">•</span>
+                <span>Astera investment console</span>
+              </div>
+              <h1 className="text-base font-extrabold text-slate-900 truncate md:text-lg">
+                {getPageTitle()}
+              </h1>
+              <p className="hidden md:flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
+                <Calendar className="h-3.5 w-3.5 text-blue-500" />
+                Dữ liệu thị trường: {formatDate(currentRegime?.dataDate || currentRegime?.detectedAt)}
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-3 md:gap-4 shrink-0">
-            <div className="hidden sm:block">
-              <MarketRegimeBadge code={currentRegime?.code || 'UNKNOWN'} size="md" />
+            <div className="hidden sm:flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+              <Activity className="h-4 w-4 text-blue-600" />
+              <div className="hidden lg:block text-right">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Market regime</div>
+                <div className="text-[11px] font-black text-slate-700">{currentRegime?.modelVersion || 'HMM Core'}</div>
+              </div>
+              <MarketRegimeBadge code={currentRegime?.code || 'UNKNOWN'} size="sm" />
             </div>
 
             <button

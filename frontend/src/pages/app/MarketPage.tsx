@@ -3,6 +3,7 @@ import { marketService } from '@/services/market-service';
 import type { MarketRegimeView } from '@/types/api';
 import { formatDate, formatPercent, getRegimeMeta } from '@/utils/formatters';
 import { MarketRegimeBadge } from '@/components/common/MarketRegimeBadge';
+import { LiveDemoPageHeader } from '@/components/common/LiveDemoPageHeader';
 import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
 import { ErrorState } from '@/components/common/ErrorState';
 import { Activity, Clock } from 'lucide-react';
@@ -57,12 +58,11 @@ export const MarketPage: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
-      <div>
-        <h2 className="text-2xl font-black text-slate-900">Giám sát Chế độ Thị trường (Market Regime)</h2>
-        <p className="text-xs text-slate-500 font-medium">
-          Mô hình Hidden Markov Model (HMM) nhận diện và định vị trạng thái rủi ro vĩ mô
-        </p>
-      </div>
+      <LiveDemoPageHeader
+        title="Giám sát Chế độ Thị trường"
+        description="Mô hình HMM nhận diện trạng thái rủi ro và cung cấp tín hiệu để điều chỉnh tỷ trọng danh mục."
+        regime={currentRegime}
+      />
 
       <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-lg space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">

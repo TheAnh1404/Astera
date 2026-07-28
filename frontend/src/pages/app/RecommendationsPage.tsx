@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { recommendationService } from '@/services/recommendation-service';
-import type { RecommendationSummaryResponse } from '@/types/api';
+import { marketService } from '@/services/market-service';
+import type { MarketRegimeView, RecommendationSummaryResponse } from '@/types/api';
 import {
   formatDate,
   formatVND,
@@ -9,6 +10,7 @@ import {
   getRecommendationTypeLabel,
 } from '@/utils/formatters';
 import { MarketRegimeBadge } from '@/components/common/MarketRegimeBadge';
+import { LiveDemoPageHeader } from '@/components/common/LiveDemoPageHeader';
 import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
 import { ErrorState } from '@/components/common/ErrorState';
 import { EmptyState } from '@/components/common/EmptyState';
@@ -16,6 +18,7 @@ import { ArrowRight } from 'lucide-react';
 
 export const RecommendationsPage: React.FC = () => {
   const [recommendations, setRecommendations] = useState<RecommendationSummaryResponse[]>([]);
+  const [currentRegime, setCurrentRegime] = useState<MarketRegimeView | null>(null);
   const [activeTab, setActiveTab] = useState<string>('ALL');
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -24,8 +27,12 @@ export const RecommendationsPage: React.FC = () => {
     try {
       setIsLoading(true);
       setErrorMessage(null);
-      const res = await recommendationService.list(1, 50);
+      const [res, regime] = await Promise.all([
+        recommendationService.list(1, 50),
+        marketService.getCurrentRegime().catch(() => null),
+      ]);
       setRecommendations(res.items || []);
+      setCurrentRegime(regime);
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'message' in err) {
         setErrorMessage((err as { message: string }).message);
@@ -69,14 +76,11 @@ export const RecommendationsPage: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-black text-slate-900">Danh sách Đề xuất AI</h2>
-          <p className="text-xs text-slate-500 font-medium">
-            Quản lý các đề xuất khởi tạo, tính lại và tái cân bằng danh mục theo thời gian
-          </p>
-        </div>
-      </div>
+      <LiveDemoPageHeader
+        title="Danh sách Đề xuất AI"
+        description="Theo dõi toàn bộ tín hiệu phân bổ vốn, tính lại và tái cân bằng theo từng chế độ thị trường."
+        regime={currentRegime}
+      />
 
       <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200">
         {tabs.map((tab) => (
