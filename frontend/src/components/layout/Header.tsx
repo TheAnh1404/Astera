@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, ChevronDown, Menu, X } from 'lucide-react';
+import { Sparkles, Menu, X, User } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 
 interface HeaderProps {
-  onOpenAssessment: () => void;
+  onOpenAssessment?: () => void;
   onOpenLiveDemo: () => void;
   onOpenPortfolio?: () => void;
 }
@@ -10,7 +12,8 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onOpenAssessment, onOpenLiveDemo, onOpenPortfolio }) => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [productDropdownOpen, setProductDropdownOpen] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,6 +22,14 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAssessment, onOpenLiveDemo
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleStartFree = () => {
+    if (onOpenAssessment) {
+      onOpenAssessment();
+    } else {
+      navigate('/register');
+    }
+  };
 
   return (
     <header
@@ -30,50 +41,20 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAssessment, onOpenLiveDemo
     >
       <div className="max-w-[1360px] mx-auto px-6 md:px-10 flex items-center justify-between">
         {/* Brand Logo */}
-        <a href="#" className="flex items-center gap-2 group">
+        <Link to="/" className="flex items-center gap-2 group">
           <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
             <Sparkles className="w-4 h-4 fill-white" />
           </div>
           <span className="text-xl font-extrabold tracking-tight text-slate-900 uppercase">
             ASTERA
           </span>
-        </a>
+        </Link>
 
         {/* Navigation Links */}
         <nav className="hidden lg:flex items-center gap-7">
-          <div className="relative">
-            {/* <button
-              onClick={() => setProductDropdownOpen(!productDropdownOpen)}
-              className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 hover:text-blue-600 transition-colors py-1"
-            >
-              <span>Sản phẩm</span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${productDropdownOpen ? 'rotate-180' : ''}`} />
-            </button> */}
-
-            {/* {productDropdownOpen && (
-                 
-              <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 text-sm z-50 animate-in fade-in duration-150">
-                <button onClick={() => { setProductDropdownOpen(false); onOpenLiveDemo(); }} className="w-full text-left block px-4 py-2.5 rounded-xl hover:bg-slate-50 font-bold text-blue-600">
-                  AI QUANTUM Live Core Demo
-                </button>
-                <button onClick={() => { setProductDropdownOpen(false); onOpenPortfolio?.(); }} className="w-full text-left block px-4 py-2.5 rounded-xl hover:bg-slate-50 font-bold text-purple-600">
-                  Lịch sử Danh mục Public
-                </button>
-                <a href="#features" onClick={() => setProductDropdownOpen(false)} className="block px-4 py-2.5 rounded-xl hover:bg-slate-50 font-medium text-slate-800">
-                  AI Xây dựng danh mục
-                </a>
-                <a href="#dashboard" onClick={() => setProductDropdownOpen(false)} className="block px-4 py-2.5 rounded-xl hover:bg-slate-50 font-medium text-slate-800">
-                  Astera Dashboard Live
-                </a>
-                <a href="#risk" onClick={() => setProductDropdownOpen(false)} className="block px-4 py-2.5 rounded-xl hover:bg-slate-50 font-medium text-slate-800">
-                  Quản trị rủi ro chủ động
-                </a>
-              </div>
-            )} */}
-          </div>
-          <a href="#risk" onClick={() => { setProductDropdownOpen(false); onOpenPortfolio?.(); }} className="text-sm font-semibold text-slate-700 hover:text-blue-600 transition-colors">
-                  Danh mục đầu tư 
-                </a>
+          <a href="#risk" onClick={() => { onOpenPortfolio?.(); }} className="text-sm font-semibold text-slate-700 hover:text-blue-600 transition-colors">
+            Danh mục đầu tư 
+          </a>
           <a href="#how-it-works" className="text-sm font-semibold text-slate-700 hover:text-blue-600 transition-colors">
             Cách hoạt động
           </a>
@@ -98,12 +79,30 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAssessment, onOpenLiveDemo
             <span>Demo AI Live Core</span>
           </button>
 
-          <button
-            onClick={onOpenAssessment}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-5 py-2.5 rounded-full transition-all shadow-md shadow-blue-600/25 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
-          >
-            Bắt đầu miễn phí
-          </button>
+          {user ? (
+            <Link
+              to="/app/dashboard"
+              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-5 py-2.5 rounded-full transition-all shadow-md shadow-blue-600/25 hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-1.5"
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>Vào Dashboard</span>
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="text-xs font-bold text-slate-700 hover:text-blue-600 px-4 py-2.5 rounded-full transition-colors"
+              >
+                Đăng nhập
+              </Link>
+              <button
+                onClick={handleStartFree}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-5 py-2.5 rounded-full transition-all shadow-md shadow-blue-600/25 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+              >
+                Bắt đầu miễn phí
+              </button>
+            </>
+          )}
         </div>
 
         {/* Mobile Hamburger Toggle */}
@@ -126,18 +125,34 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAssessment, onOpenLiveDemo
             <a href="#about" onClick={() => setMobileMenuOpen(false)}>Về chúng tôi</a>
           </nav>
           <div className="pt-4 border-t border-slate-100 flex flex-col gap-3">
-            <button className="w-full text-center py-2.5 font-semibold text-slate-700">
-              Đăng nhập
-            </button>
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onOpenAssessment();
-              }}
-              className="w-full bg-blue-600 text-white py-3 rounded-full font-bold shadow-md"
-            >
-              Bắt đầu miễn phí
-            </button>
+            {user ? (
+              <Link
+                to="/app/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center bg-blue-600 text-white py-3 rounded-full font-bold shadow-md"
+              >
+                Vào Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full text-center py-2.5 font-semibold text-slate-700 border border-slate-200 rounded-full"
+                >
+                  Đăng nhập
+                </Link>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleStartFree();
+                  }}
+                  className="w-full bg-blue-600 text-white py-3 rounded-full font-bold shadow-md text-center"
+                >
+                  Bắt đầu miễn phí
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
