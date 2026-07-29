@@ -61,7 +61,7 @@ export const MainLayout: React.FC = () => {
     if (path.includes('/notifications')) return 'Trung tâm Thông báo';
     if (path.includes('/history')) return 'Lịch sử Hoạt động';
     if (path.includes('/settings')) return 'Cài đặt Tài khoản';
-    return 'Astera Advisor';
+    return 'Wealth4ward Advisor';
   };
 
   const handleLogout = async () => {
@@ -84,7 +84,7 @@ export const MainLayout: React.FC = () => {
             </div>
             {!sidebarCollapsed && (
               <span className="text-lg font-black tracking-tight text-slate-900 uppercase">
-                ASTERA
+                Wealth4ward
               </span>
             )}
           </Link>
@@ -139,7 +139,7 @@ export const MainLayout: React.FC = () => {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-xs font-extrabold text-slate-900 truncate">
-                  {user?.fullName || 'Người dùng Astera'}
+                  {user?.fullName || 'Người dùng Wealth4ward'}
                 </div>
                 <div className="text-[11px] text-slate-400 truncate">{user?.email}</div>
               </div>
@@ -163,7 +163,7 @@ export const MainLayout: React.FC = () => {
                 <Sparkles className="w-4 h-4 fill-white" />
               </div>
               <span className="text-lg font-black tracking-tight text-slate-900 uppercase">
-                ASTERA
+                Wealth4ward
               </span>
             </Link>
             <button
@@ -218,7 +218,7 @@ export const MainLayout: React.FC = () => {
                   AI Brain Engine Active
                 </span>
                 <span className="text-slate-300">•</span>
-                <span>Astera investment console</span>
+                <span>Wealth4ward investment console</span>
               </div>
               <h1 className="text-base font-extrabold text-slate-900 truncate md:text-lg">
                 {getPageTitle()}

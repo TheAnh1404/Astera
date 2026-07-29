@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { historyService } from '@/services/history-service';
 import { marketService } from '@/services/market-service';
 import type { HistoryItemResponse, MarketRegimeView } from '@/types/api';

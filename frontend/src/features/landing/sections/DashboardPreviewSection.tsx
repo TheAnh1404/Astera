@@ -14,7 +14,7 @@ export const DashboardPreviewSection: React.FC = () => {
         {/* Left Side Copy (4 Cols) */}
         <div className="lg:col-span-4">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight mb-4">
-            Xem trước trải nghiệm<br />Astera Dashboard
+            Xem trước trải nghiệm<br />Wealth4ward Dashboard
           </h2>
           <p className="text-base text-slate-600 font-normal leading-relaxed mb-8">
             Mọi thông tin quan trọng được trình bày rõ ràng, trực quan và dễ hiểu.
@@ -143,7 +143,7 @@ export const DashboardPreviewSection: React.FC = () => {
                         strokeDasharray="4 4"
                       />
 
-                      {/* Main Portfolio Line (Astera Portfolio) */}
+                      {/* Main Portfolio Line (Wealth4ward Portfolio) */}
                       <path
                         d="M 0 85 Q 40 70, 80 50 T 160 45 T 240 25 T 300 15"
                         fill="none"

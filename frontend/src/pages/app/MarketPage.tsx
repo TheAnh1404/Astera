@@ -85,19 +85,15 @@ export const MarketPage: React.FC = () => {
       setIsLoading(true);
       setErrorMessage(null);
 
-      const [curr, list] = await Promise.all([
-        marketService.getCurrentRegime(),
-        marketService.listRegimes(1, 20),
-      ]);
-
-      setCurrentRegime(curr);
-      setRegimes(list);
-    } catch (err: unknown) {
-      if (typeof err === 'object' && err !== null && 'message' in err) {
-        setErrorMessage((err as { message: string }).message);
-      } else {
-        setErrorMessage('Không thể tải dữ liệu chế độ thị trường.');
+      const res = await fetch('/simulated_users.json');
+      const data = await res.json();
+      
+      const dashboardData = data.dashboard_data;
+      if (dashboardData && dashboardData.market_regime) {
+        setCurrentRegime(dashboardData.market_regime as any);
       }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Không thể tải dữ liệu chế độ thị trường.');
     } finally {
       setIsLoading(false);
     }
@@ -194,9 +190,8 @@ export const MarketPage: React.FC = () => {
           {/* VNINDEX Live Card Header Pill */}
           <div className="hidden sm:flex items-center gap-2 bg-slate-100 px-3.5 py-1.5 rounded-full text-xs font-bold text-slate-800 border border-slate-200/60 shadow-2xs">
             <span>VN-Index</span>
-            <span className="font-black text-slate-900">1,284.41</span>
+            <span className="font-black text-slate-900">{(_currentRegime as any)?.vnindex ?? '1,284.41'}</span>
             <span className="text-emerald-600 flex items-center gap-0.5">
-              <span>+12.61 (+0.99%)</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </span>
           </div>
@@ -218,7 +213,7 @@ export const MarketPage: React.FC = () => {
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-black text-slate-900">Trạng thái thị trường hiện tại</h3>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-700 uppercase">
-                BULL MARKET
+                {(_currentRegime as any)?.status || 'BULL MARKET'}
               </span>
             </div>
 
@@ -226,7 +221,7 @@ export const MarketPage: React.FC = () => {
               {/* Left Side: Bull Graphic & Banner */}
               <div className="sm:col-span-5 flex flex-col items-center text-center space-y-2">
                 <BullMarketIllustration className="w-28 h-28" />
-                <h2 className="text-2xl font-black text-emerald-600 tracking-tight">BULL MARKET</h2>
+                <h2 className="text-2xl font-black text-emerald-600 tracking-tight">{(_currentRegime as any)?.status || 'BULL MARKET'}</h2>
                 <p className="text-xs font-bold text-slate-700">Thị trường tăng giá</p>
               </div>
 
@@ -239,21 +234,21 @@ export const MarketPage: React.FC = () => {
                       <Zap className="w-3.5 h-3.5 text-emerald-600" />
                       Confidence
                     </span>
-                    <span className="text-slate-900 font-extrabold">68%</span>
+                    <span className="text-slate-900 font-extrabold">{(_currentRegime as any)?.confidence ?? 68}%</span>
                   </div>
                   <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: '68%' }} />
+                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(_currentRegime as any)?.confidence ?? 68}%` }} />
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between border-t border-slate-100 pt-2">
                   <span className="text-slate-500 font-medium">Ngày phát hiện</span>
-                  <span className="font-bold text-slate-900">20/05/2025</span>
+                  <span className="font-bold text-slate-900">{(_currentRegime as any)?.date || '20/05/2025'}</span>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500 font-medium">Ngày dữ liệu</span>
-                  <span className="font-bold text-slate-900">20/05/2025</span>
+                  <span className="font-bold text-slate-900">{(_currentRegime as any)?.date || '20/05/2025'}</span>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -263,7 +258,7 @@ export const MarketPage: React.FC = () => {
 
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500 font-medium">Model version</span>
-                  <span className="font-bold text-slate-700">v2.1.0</span>
+                  <span className="font-bold text-slate-700">{(_currentRegime as any)?.model_version || 'v2.1.0'}</span>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -280,7 +275,7 @@ export const MarketPage: React.FC = () => {
 
             {/* Subtitle & Description text */}
             <p className="text-xs text-slate-600 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 leading-relaxed">
-              Astera AI phát hiện thị trường đang trong giai đoạn tăng giá với động lực tích cực. Nhà đầu tư có thể xem xét tăng tỷ trọng cổ phiếu và tập trung vào các nhóm ngành dẫn dắt.
+              {(_currentRegime as any)?.advice || 'Wealth4ward AI phát hiện thị trường đang trong giai đoạn tăng giá với động lực tích cực. Nhà đầu tư có thể xem xét tăng tỷ trọng cổ phiếu và tập trung vào các nhóm ngành dẫn dắt.'}
             </p>
           </div>
 

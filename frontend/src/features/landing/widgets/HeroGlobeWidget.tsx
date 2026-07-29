@@ -168,7 +168,7 @@ export const HeroGlobeWidget: React.FC = () => {
       <div className="relative z-10 w-[300px] h-[300px] sm:w-[360px] sm:h-[360px] flex items-center justify-center pointer-events-auto">
         <Globe3D />
 
-        {/* AI Astera Badge Overlay */}
+        {/* AI Wealth4ward Badge Overlay */}
         <div className="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-none">
           <motion.div
             className="flex items-center gap-1.5 mb-0.5"
@@ -186,7 +186,7 @@ export const HeroGlobeWidget: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.5 }}
           >
-            Astera
+            Wealth4ward
           </motion.span>
         </div>
 

@@ -286,7 +286,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({ isOpen, onClos
                 <div className="flex items-center gap-2">
                   <Award className="w-5 h-5 text-secondary" />
                   <span className="font-bold text-sm text-on-background">
-                    Chiến lược đề xuất: Astera Dynamic Growth
+                    Chiến lược đề xuất: Wealth4ward Dynamic Growth
                   </span>
                 </div>
                 <span className="text-xs font-bold text-[#009668] bg-tertiary-container px-3 py-1 rounded-full">

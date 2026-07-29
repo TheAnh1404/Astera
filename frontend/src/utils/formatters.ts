@@ -4,15 +4,17 @@ import type { InvestmentHorizon, MarketRegimeCode, RecommendationStatus, Recomme
  * Formats a number or numeric string as VND currency.
  */
 export function formatVND(amount: number | string | null | undefined): string {
-  if (amount === null || amount === undefined || amount === '') return '0 ₫';
+  if (amount === null || amount === undefined || amount === '') return '0 VNĐ';
   const numericValue = typeof amount === 'string' ? parseFloat(amount) : amount;
-  if (isNaN(numericValue)) return '0 ₫';
+  if (isNaN(numericValue)) return '0 VNĐ';
 
-  return new Intl.NumberFormat('vi-VN', {
+  const formatted = new Intl.NumberFormat('vi-VN', {
     style: 'currency',
     currency: 'VND',
     maximumFractionDigits: 0,
   }).format(numericValue);
+  
+  return formatted.replace(/[₫đ]/g, 'VNĐ');
 }
 
 /**
@@ -24,7 +26,7 @@ export function formatPercent(value: number | string | null | undefined, digits:
   const num = typeof value === 'string' ? parseFloat(value) : value;
   if (isNaN(num)) return '0%';
 
-  const percentage = Math.abs(num) <= 1 && num !== 0 ? num * 100 : num;
+  const percentage = num;
   return `${percentage.toFixed(digits)}%`;
 }
 
@@ -33,11 +35,11 @@ export function formatPercent(value: number | string | null | undefined, digits:
  */
 export function formatPnL(amount: number | string | null | undefined): { text: string; isPositive: boolean; isNegative: boolean } {
   if (amount === null || amount === undefined || amount === '') {
-    return { text: '0 ₫', isPositive: false, isNegative: false };
+    return { text: '0 VNĐ', isPositive: false, isNegative: false };
   }
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
   if (isNaN(num) || num === 0) {
-    return { text: '0 ₫', isPositive: false, isNegative: false };
+    return { text: '0 VNĐ', isPositive: false, isNegative: false };
   }
 
   const formatted = formatVND(Math.abs(num));

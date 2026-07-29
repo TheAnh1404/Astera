@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+﻿import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import aiGlobeImg from '@/assets/images/ai-globe.jpg';
 

@@ -97,8 +97,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setOnboardingStep('UNAUTHENTICATED');
     };
 
-    window.addEventListener('astera:unauthorized', handleUnauthorized);
-    return () => window.removeEventListener('astera:unauthorized', handleUnauthorized);
+    window.addEventListener('wealth4ward:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('wealth4ward:unauthorized', handleUnauthorized);
   }, [refreshAuthState]);
 
   const login = async (_: { user: UserRead }) => {

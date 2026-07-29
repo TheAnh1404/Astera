@@ -27,7 +27,7 @@ export const TrustStatsSection: React.FC = () => {
   ];
 
   return (
-    <section id="why-astera" className="py-section-gap px-6 md:px-container-padding bg-white">
+    <section id="why-wealth4ward" className="py-section-gap px-6 md:px-container-padding bg-white">
       <div className="max-w-max-width mx-auto">
         {/* Trust Pillars */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-28">
@@ -77,7 +77,7 @@ export const TrustStatsSection: React.FC = () => {
                 Bank-Grade 256-Bit SSL Encryption
               </h4>
               <p className="text-xs text-on-surface-variant">
-                Your data is strictly encrypted at rest and in transit. Astera never sells user data.
+                Your data is strictly encrypted at rest and in transit. Wealth4ward never sells user data.
               </p>
             </div>
           </div>

@@ -61,7 +61,7 @@ export const FullExperienceSection: React.FC<FullExperienceSectionProps> = ({
         {/* Left Side Copy & CTA (4 Cols) */}
         <div className="lg:col-span-4">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight mb-4">
-            Trải nghiệm trọn vẹn<br />với Astera
+            Trải nghiệm trọn vẹn<br />với Wealth4ward
           </h2>
           <p className="text-base text-slate-600 font-normal leading-relaxed mb-8">
             Tất cả công cụ bạn cần để đầu tư thông minh và bền vững.

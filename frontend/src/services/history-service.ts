@@ -1,4 +1,4 @@
-import { apiRequest } from './api-client';
+﻿import { apiRequest } from './api-client';
 import type { HistoryDetailResponse, HistoryListResponse } from '@/types/api';
 
 export const historyService = {

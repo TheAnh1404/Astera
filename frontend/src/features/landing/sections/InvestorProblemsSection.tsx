@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { TrendingDown, Frown, BookOpen, Clock } from 'lucide-react';
 
 export const InvestorProblemsSection: React.FC = () => {

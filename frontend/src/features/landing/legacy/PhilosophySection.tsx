@@ -23,7 +23,7 @@ export const PhilosophySection: React.FC = () => {
 
         <div className="h-1 w-20 bg-secondary mx-auto mb-8 rounded-full" />
         <p className="font-label-md text-xs md:text-label-md tracking-[0.25em] text-outline-variant font-bold uppercase">
-          THE ASTERA PHILOSOPHY
+          THE Wealth4ward PHILOSOPHY
         </p>
       </div>
     </section>

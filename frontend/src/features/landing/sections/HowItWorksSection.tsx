@@ -40,7 +40,7 @@ export const HowItWorksSection: React.FC = () => {
       <div className="max-w-[1360px] mx-auto px-6 md:px-10">
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            Astera AI hoạt động như thế nào?
+            Wealth4ward AI hoạt động như thế nào?
           </h2>
         </div>
 

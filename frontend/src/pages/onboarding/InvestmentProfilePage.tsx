@@ -97,7 +97,7 @@ export const InvestmentProfilePage: React.FC = () => {
           </div>
           <h2 className="text-3xl font-black text-slate-900">Khảo sát Mục tiêu & Khẩu vị Rủi ro</h2>
           <p className="text-sm text-slate-600 max-w-md mx-auto">
-            Hệ thống AI Astera cần thông tin hồ sơ để xác định chiến lược phân bổ tài sản phù hợp nhất với bạn.
+            Hệ thống AI Wealth4ward cần thông tin hồ sơ để xác định chiến lược phân bổ tài sản phù hợp nhất với bạn.
           </p>
         </div>
 

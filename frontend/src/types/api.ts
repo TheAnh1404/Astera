@@ -1,4 +1,4 @@
-export type UserRole = 'USER' | 'ADMIN';
+﻿export type UserRole = 'USER' | 'ADMIN';
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
 
 export type RiskAppetite = 'LOW' | 'MEDIUM' | 'HIGH';

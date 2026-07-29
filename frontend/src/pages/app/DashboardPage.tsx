@@ -10,6 +10,7 @@ import {
   Wallet,
   Zap,
 } from 'lucide-react';
+import { DualPerformanceChart } from '@/components/common/DualPerformanceChart';
 import { DonutChart } from '@/components/common/DonutChart';
 import { ErrorState } from '@/components/common/ErrorState';
 import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
@@ -21,7 +22,8 @@ import type {
   PortfolioResponse,
   RecommendationSummaryResponse,
 } from '@/types/api';
-import { formatVND } from '@/utils/formatters';
+import { formatVND, formatPnL, formatDate } from '@/utils/formatters';
+import ReactApexChart from 'react-apexcharts';
 
 // Bull Market Icon illustration
 const BullIcon: React.FC<{ className?: string }> = ({ className = 'w-16 h-16' }) => (
@@ -49,213 +51,6 @@ const BullIcon: React.FC<{ className?: string }> = ({ className = 'w-16 h-16' })
   </svg>
 );
 
-// Dual line chart for Portfolio vs VN-Index comparison
-const DualPerformanceChart: React.FC<{
-  activeFilter: string;
-  onFilterChange: (f: string) => void;
-  compareBenchmark: string;
-  onBenchmarkChange: (b: string) => void;
-}> = ({ activeFilter, onFilterChange, compareBenchmark, onBenchmarkChange }) => {
-  const filters = ['1M', '3M', '6M', '1Y', 'ALL'];
-
-  const chartData = [
-    { date: '21/02', portfolio: 0.0, benchmark: 0.0 },
-    { date: '28/02', portfolio: 1.2, benchmark: 0.8 },
-    { date: '07/03', portfolio: 1.5, benchmark: 2.1 },
-    { date: '14/03', portfolio: 2.8, benchmark: 1.9 },
-    { date: '21/03', portfolio: 4.5, benchmark: 3.2 },
-    { date: '28/03', portfolio: 4.2, benchmark: 2.8 },
-    { date: '04/04', portfolio: 6.8, benchmark: 4.1 },
-    { date: '11/04', portfolio: 9.1, benchmark: 6.2 },
-    { date: '18/04', portfolio: 8.5, benchmark: 5.8 },
-    { date: '25/04', portfolio: 4.1, benchmark: 2.1 },
-    { date: '02/05', portfolio: 7.2, benchmark: 4.8 },
-    { date: '09/05', portfolio: 9.8, benchmark: 6.9 },
-    { date: '16/05', portfolio: 10.2, benchmark: 5.2 },
-    { date: '21/05', portfolio: 11.12, benchmark: 6.47 },
-  ];
-
-  const pointsCount = chartData.length;
-  const width = 600;
-  const height = 200;
-
-  const getCoords = (val: number, idx: number) => {
-    const x = (idx / (pointsCount - 1)) * width;
-    const y = height - ((val - (-5)) / 22) * height;
-    return { x, y };
-  };
-
-  const portPoints = chartData
-    .map((d, i) => {
-      const { x, y } = getCoords(d.portfolio, i);
-      return `${x},${y}`;
-    })
-    .join(' ');
-
-  const benchPoints = chartData
-    .map((d, i) => {
-      const { x, y } = getCoords(d.benchmark, i);
-      return `${x},${y}`;
-    })
-    .join(' ');
-
-  const zeroY = height - ((0 - (-5)) / 22) * height;
-
-  return (
-    <div className="space-y-4">
-      {/* Header controls: Filter tabs & Benchmark dropdown */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-4 text-xs font-bold">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-            <span className="text-slate-600">Danh mục của bạn</span>
-            <span className="text-emerald-600 font-extrabold">+11.12%</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-            <span className="text-slate-600">VN-Index</span>
-            <span className="text-blue-600 font-extrabold">+6.47%</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Time range pills */}
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-[11px] font-bold">
-            {filters.map((f) => (
-              <button
-                key={f}
-                onClick={() => onFilterChange(f)}
-                className={`px-2.5 py-1 rounded-lg transition-all ${
-                  activeFilter === f
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-900'
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-
-          {/* Benchmark selector */}
-          <div className="relative">
-            <select
-              value={compareBenchmark}
-              onChange={(e) => onBenchmarkChange(e.target.value)}
-              className="appearance-none bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-xs font-bold pl-3 pr-7 py-1.5 rounded-xl border-none cursor-pointer outline-none transition-colors"
-            >
-              <option value="VN-Index">So sánh với VN-Index</option>
-              <option value="VN30">So sánh với VN30</option>
-              <option value="HNX-Index">So sánh với HNX-Index</option>
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-          </div>
-        </div>
-      </div>
-
-      {/* SVG Dual Line Chart */}
-      <div className="relative w-full h-[210px] overflow-hidden pt-2">
-        <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="w-full h-full">
-          {/* Zero grid line */}
-          <line
-            x1="0"
-            y1={zeroY}
-            x2={width}
-            y2={zeroY}
-            stroke="#e2e8f0"
-            strokeDasharray="4 4"
-            strokeWidth="1"
-          />
-
-          {/* VN-Index Line (Blue) */}
-          <polyline
-            fill="none"
-            stroke="#3b82f6"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            points={benchPoints}
-          />
-
-          {/* Portfolio Line (Emerald Green) */}
-          <polyline
-            fill="none"
-            stroke="#10b981"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            points={portPoints}
-          />
-
-          {/* Endpoint markers */}
-          {chartData.length > 0 && (() => {
-            const lastIdx = chartData.length - 1;
-            const lastPort = getCoords(chartData[lastIdx].portfolio, lastIdx);
-            const lastBench = getCoords(chartData[lastIdx].benchmark, lastIdx);
-            return (
-              <>
-                <circle cx={lastPort.x} cy={lastPort.y} r="5" className="fill-emerald-500 stroke-white stroke-2" />
-                <rect x={lastPort.x - 22} y={lastPort.y - 20} width="44" height="16" rx="4" fill="#10b981" />
-                <text x={lastPort.x} y={lastPort.y - 8} textAnchor="middle" fill="#fff" fontSize="9" fontWeight="bold">
-                  11.12%
-                </text>
-
-                <circle cx={lastBench.x} cy={lastBench.y} r="5" className="fill-blue-500 stroke-white stroke-2" />
-                <rect x={lastBench.x - 20} y={lastBench.y + 6} width="40" height="16" rx="4" fill="#3b82f6" />
-                <text x={lastBench.x} y={lastBench.y + 18} textAnchor="middle" fill="#fff" fontSize="9" fontWeight="bold">
-                  6.47%
-                </text>
-              </>
-            );
-          })()}
-
-          {/* Interactive touch targets */}
-          {chartData.map((d, i) => {
-            const { x } = getCoords(d.portfolio, i);
-            return (
-              <rect
-                key={i}
-                x={x - 15}
-                y="0"
-                width="30"
-                height={height}
-                fill="transparent"
-                className="cursor-pointer"
-              />
-            );
-          })}
-        </svg>
-
-        {/* Date X-Axis labels */}
-        <div className="flex justify-between text-[10px] font-bold text-slate-400 pt-1 px-1">
-          {chartData.filter((_, idx) => idx % 2 === 0).map((d) => (
-            <span key={d.date}>{d.date}</span>
-          ))}
-        </div>
-      </div>
-
-      {/* 4 Metrics Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
-        <div>
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tổng lợi nhuận</div>
-          <div className="text-sm font-black text-emerald-600">+123,456,789 ₫</div>
-        </div>
-        <div>
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tổng lợi nhuận (%)</div>
-          <div className="text-sm font-black text-emerald-600">+11.12%</div>
-        </div>
-        <div>
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lợi nhuận (Tháng)</div>
-          <div className="text-sm font-black text-emerald-600">+23,456,789 ₫</div>
-        </div>
-        <div>
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lợi nhuận (Ngày)</div>
-          <div className="text-sm font-black text-emerald-600">+2,345,678 ₫</div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 export const DashboardPage: React.FC = () => {
   const [portfolio, setPortfolio] = useState<PortfolioResponse | null>(null);
   const [performance, setPerformance] = useState<PortfolioPerformanceResponse | null>(null);
@@ -266,23 +61,54 @@ export const DashboardPage: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState('3M');
   const [compareBenchmark, setCompareBenchmark] = useState('VN-Index');
 
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [userHoldings, setUserHoldings] = useState<any[]>([]);
+
   const loadDashboardData = async () => {
     try {
       setIsLoading(true);
       setErrorMessage(null);
 
-      const [pData, perfData, , recListData] = await Promise.all([
-        portfolioService.getCurrent(),
-        portfolioService.getPerformance(),
-        marketService.getCurrentRegime().catch(() => null),
-        recommendationService.list(1, 10),
-      ]);
+      // Fetch from simulated_users.json which now contains dashboard_data
+      const res = await fetch('/simulated_users.json');
+      if (!res.ok) throw new Error('Cannot load simulated_users.json');
+      const json = await res.json();
+      if (json.dashboard_data) {
+        setDashboardData(json.dashboard_data);
+        console.log("a", json)
+      }
+      
+      // Fallback for user portfolio data - loading from tier_100m demo data
+      const userTier = json.tier_100m;
+      if (userTier) {
+        setPerformance({
+          estimatedTotalValue: userTier.current_nav,
+          initialCapital: userTier.initial_capital,
+          profitLoss: userTier.pnl_cash,
+          pnlPercent: userTier.pnl_pct,
+          cashAmount: userTier.cash_left,
+        } as any);
 
-      setPortfolio(pData);
-      setPerformance(perfData);
-      setPendingRecommendation(
-        recListData.items.find((item) => item.status === 'GENERATED') || null,
-      );
+        setPortfolio({
+          currentValue: userTier.current_nav,
+          initialCapital: userTier.initial_capital,
+          version: {
+            cashAmount: userTier.cash_left,
+            cashWeight: (userTier.cash_left / userTier.current_nav) * 100,
+          }
+        } as any);
+        setUserHoldings(userTier.holdings || []);
+      } else {
+        setPortfolio(null);
+        setPerformance(null);
+        setUserHoldings([]);
+      }
+
+      // Simulate a pending recommendation to show in the UI card
+      setPendingRecommendation({
+        id: 'mock-rec-123',
+        status: 'GENERATED',
+      } as any);
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'message' in err) {
         setErrorMessage((err as { message: string }).message);
@@ -347,44 +173,51 @@ export const DashboardPage: React.FC = () => {
     : 3.7;
 
   // Donut chart items
-  const donutItems = portfolio?.version?.allocations
-    ? [
-        ...portfolio.version.allocations.map((alloc) => ({
-          symbol: alloc.symbol,
-          name: alloc.companyName,
-          weight: typeof alloc.weight === 'string' ? parseFloat(alloc.weight) : alloc.weight,
-          amount: alloc.investedAmount,
-        })),
-        ...(cashWeight > 0
-          ? [
-              {
-                symbol: 'TIỀN MẶT',
-                name: 'Dự trữ phòng thủ',
-                weight: cashWeight,
-                amount: cashAmount,
-                color: '#94a3b8',
-              },
-            ]
-          : []),
-      ]
-    : [
-        { symbol: 'Ngân hàng', name: 'Ngân hàng', weight: 30.25, amount: 373456789, color: '#10b981' },
-        { symbol: 'Bất động sản', name: 'Bất động sản', weight: 18.4, amount: 227160000, color: '#3b82f6' },
-        { symbol: 'Thép', name: 'Thép', weight: 15.3, amount: 188888000, color: '#ef4444' },
-        { symbol: 'Chứng khoán', name: 'Chứng khoán', weight: 12.1, amount: 149382000, color: '#eab308' },
-        { symbol: 'Công nghệ', name: 'Công nghệ', weight: 8.75, amount: 108024000, color: '#8b5cf6' },
-        { symbol: 'Khác', name: 'Khác', weight: 11.2, amount: 138271000, color: '#64748b' },
-        { symbol: 'Tiền mặt', name: 'Dự trữ phòng thủ', weight: 3.7, amount: 45678900, color: '#94a3b8' },
-      ];
+  const mappedDonutItems = userHoldings.map((h: any) => {
+    const val = h.so_co_phieu * h.gia_hien_tai;
+    const w = (val / currentNAV) * 100;
+    return {
+      symbol: h.ma_co_phieu,
+      name: h.ma_co_phieu,
+      weight: w,
+      amount: val,
+    };
+  });
+
+  const donutItems = [
+    ...mappedDonutItems,
+    ...(cashWeight > 0
+      ? [
+          {
+            symbol: 'TIỀN MẶT',
+            name: 'Dự trữ phòng thủ',
+            weight: cashWeight,
+            amount: cashAmount,
+            color: '#94a3b8',
+          },
+        ]
+      : []),
+  ].sort((a, b) => b.weight - a.weight);
 
   // Holding table positions
-  const holdingPositions = [
-    { symbol: 'VCB', name: 'Vietcombank', weight: '10.25%', currentPrice: 92300, entryPrice: 85200, value: 126543000, pnl: '+8.33%' },
-    { symbol: 'VHM', name: 'Vinhomes', weight: '8.75%', currentPrice: 74800, entryPrice: 69100, value: 108643200, pnl: '+8.25%' },
-    { symbol: 'HPG', name: 'Hòa Phát', weight: '7.80%', currentPrice: 28900, entryPrice: 26100, value: 96582000, pnl: '+10.73%' },
-    { symbol: 'TCB', name: 'Techcombank', weight: '7.20%', currentPrice: 51600, entryPrice: 48900, value: 88704000, pnl: '+5.52%' },
-    { symbol: 'MBB', name: 'MB Bank', weight: '6.50%', currentPrice: 24200, entryPrice: 22300, value: 80543000, pnl: '+8.52%' },
-  ];
+  const holdingPositions = userHoldings
+    .map((h: any) => {
+      const val = h.so_co_phieu * h.gia_hien_tai;
+      const w = ((val / currentNAV) * 100).toFixed(2) + '%';
+      const pnlPct = h.gia_von > 0 ? ((h.gia_hien_tai - h.gia_von) / h.gia_von * 100) : 0;
+      const pnlSign = pnlPct > 0 ? '+' : '';
+      return {
+        symbol: h.ma_co_phieu,
+        name: h.ma_co_phieu, // fallback for name
+        weight: w,
+        currentPrice: h.gia_hien_tai,
+        entryPrice: h.gia_von,
+        value: val,
+        pnl: `${pnlSign}${pnlPct.toFixed(2)}%`,
+        isProfit: pnlPct >= 0,
+      };
+    })
+    .sort((a, b) => b.value - a.value);
 
   return (
     <div className="space-y-6 pb-8 animate-in fade-in duration-200">
@@ -448,8 +281,8 @@ export const DashboardPage: React.FC = () => {
             <div className="text-xs text-slate-400 font-semibold mt-1">Giá trị hiện tại</div>
           </div>
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-            <span className="font-extrabold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">
-              +23,456,789 ₫ (+1.93%)
+            <span className={`font-extrabold px-2 py-1 rounded-lg ${pnlCash >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+              {formatPnL(pnlCash).text} ({pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%)
             </span>
             <div className="w-12 h-4">
               <svg viewBox="0 0 40 12" className="w-full h-full text-emerald-500">
@@ -475,12 +308,12 @@ export const DashboardPage: React.FC = () => {
           </div>
           <div>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-black text-emerald-600 tracking-tight">
-                +{formatVND(pnlCash).replace(' ₫', '')} ₫
+              <span className={`text-2xl font-black tracking-tight ${pnlCash >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {formatPnL(pnlCash).text}
               </span>
             </div>
-            <div className="inline-block mt-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-xs font-black">
-              +{pnlPercent.toFixed(2)}%
+            <div className={`inline-block mt-1 px-2 py-0.5 rounded-md text-xs font-black ${pnlCash >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+              {pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%
             </div>
           </div>
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
@@ -559,6 +392,13 @@ export const DashboardPage: React.FC = () => {
             onFilterChange={setActiveFilter}
             compareBenchmark={compareBenchmark}
             onBenchmarkChange={setCompareBenchmark}
+            data={dashboardData?.performance_chart}
+            metrics={{
+              totalProfit: pnlCash,
+              totalProfitPercent: pnlPercent,
+              monthProfit: pnlCash * 0.45, // mock 45% of total as month
+              dayProfit: pnlCash * 0.05, // mock 5% of total as day
+            }}
           />
         </div>
 
@@ -582,32 +422,32 @@ export const DashboardPage: React.FC = () => {
                 <BullIcon className="w-16 h-16 shrink-0" />
                 <div className="space-y-1.5 flex-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-black text-lg text-emerald-900 tracking-tight">BULL MARKET</span>
+                    <span className="font-black text-lg text-emerald-900 tracking-tight">{dashboardData?.market_regime?.status || 'BULL MARKET'}</span>
                   </div>
-                  <div className="text-xs font-extrabold text-emerald-700">Thị trường tăng giá</div>
+                  <div className="text-xs font-extrabold text-emerald-700">Trạng thái định vị vĩ mô</div>
 
                   <div className="space-y-1 pt-1">
                     <div className="flex justify-between text-[11px] font-bold text-emerald-900">
                       <span>Confidence</span>
-                      <span>68%</span>
+                      <span>{dashboardData?.market_regime?.confidence || 68}%</span>
                     </div>
                     <div className="w-full bg-emerald-200/80 rounded-full h-1.5 overflow-hidden">
-                      <div className="bg-emerald-600 h-full rounded-full w-[68%]" />
+                      <div className="bg-emerald-600 h-full rounded-full" style={{ width: `${dashboardData?.market_regime?.confidence || 68}%` }} />
                     </div>
                   </div>
 
                   <div className="text-[11px] space-y-0.5 pt-2 text-slate-600 font-medium">
                     <div className="flex justify-between">
-                      <span className="text-slate-500">Detected</span>
-                      <span className="font-bold text-slate-800">20/05/2025</span>
+                      <span className="text-slate-500">Điểm VN-Index</span>
+                      <span className="font-bold text-slate-800">{dashboardData?.market_regime?.vnindex || '1,284.41'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500">Data date</span>
-                      <span className="font-bold text-slate-800">20/05/2025</span>
+                      <span className="font-bold text-slate-800">{dashboardData?.market_regime?.date || '20/05/2025'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500">Model version</span>
-                      <span className="font-bold text-slate-800">v2.1.0</span>
+                      <span className="font-bold text-slate-800">{dashboardData?.market_regime?.model_version || 'v2.1.0'}</span>
                     </div>
                   </div>
                 </div>
@@ -615,16 +455,16 @@ export const DashboardPage: React.FC = () => {
             </div>
 
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-slate-600 text-xs font-medium leading-relaxed">
-              Thị trường đang trong giai đoạn tăng giá với động lực tích cực. Nhà đầu tư có thể xem xét tăng tỷ trọng cổ phiếu và tập trung vào các nhóm ngành dẫn dắt.
+              {dashboardData?.market_regime?.advice || 'Thị trường đang trong giai đoạn tăng giá với động lực tích cực. Nhà đầu tư có thể xem xét tăng tỷ trọng cổ phiếu và tập trung vào các nhóm ngành dẫn dắt.'}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ROW 3: 3 BOTTOM CARDS */}
+      {/* ROW 3: PHÂN BỔ & ĐỀ XUẤT */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-        {/* Card 1: Phân bổ danh mục (3.5 cols) */}
-        <div className="md:col-span-4 bg-white p-6 md:p-7 rounded-3xl border border-slate-200/80 shadow-xs space-y-6 flex flex-col justify-between">
+        {/* Card 1: Phân bổ danh mục (7 cols) */}
+        <div className="md:col-span-7 bg-white p-6 md:p-7 rounded-3xl border border-slate-200/80 shadow-xs space-y-6 flex flex-col justify-between">
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <h3 className="text-base font-extrabold text-slate-900">Phân bổ danh mục</h3>
@@ -632,7 +472,7 @@ export const DashboardPage: React.FC = () => {
 
             <DonutChart
               items={donutItems}
-              centerLabel="1.23B ₫"
+              centerLabel={currentNAV >= 1e9 ? `${(currentNAV / 1e9).toFixed(2)}B VNĐ` : currentNAV >= 1e6 ? `${(currentNAV / 1e6).toFixed(1)}M VNĐ` : formatVND(currentNAV)}
               centerSublabel="Tổng giá trị"
               size={180}
             />
@@ -649,51 +489,8 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 2: Danh mục nắm giữ (5.5 cols) */}
-        <div className="md:col-span-5 bg-white p-6 md:p-7 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <h3 className="text-base font-extrabold text-slate-900">Danh mục nắm giữ</h3>
-            <Link
-              to="/app/portfolio"
-              className="text-xs font-extrabold text-blue-600 hover:underline flex items-center gap-1"
-            >
-              <span>Xem tất cả</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-slate-200 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider bg-slate-50">
-                  <th className="py-2.5 px-3">Mã cổ phiếu</th>
-                  <th className="py-2.5 px-3">Tên công ty</th>
-                  <th className="py-2.5 px-3 text-right">Tỷ trọng</th>
-                  <th className="py-2.5 px-3 text-right">Giá hiện tại</th>
-                  <th className="py-2.5 px-3 text-right">Giá vốn</th>
-                  <th className="py-2.5 px-3 text-right">Giá trị hiện tại</th>
-                  <th className="py-2.5 px-3 text-right">Lãi/Lỗ</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-medium">
-                {holdingPositions.map((row) => (
-                  <tr key={row.symbol} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-3 font-black text-blue-600">{row.symbol}</td>
-                    <td className="py-3 px-3 font-bold text-slate-800">{row.name}</td>
-                    <td className="py-3 px-3 text-right font-extrabold text-slate-900">{row.weight}</td>
-                    <td className="py-3 px-3 text-right text-slate-700">{row.currentPrice.toLocaleString('vi-VN')}</td>
-                    <td className="py-3 px-3 text-right text-slate-500">{row.entryPrice.toLocaleString('vi-VN')}</td>
-                    <td className="py-3 px-3 text-right font-bold text-slate-900">{row.value.toLocaleString('vi-VN')}</td>
-                    <td className="py-3 px-3 text-right font-black text-emerald-600">{row.pnl}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Card 3: Đề xuất cần xem xét (2.5 cols) */}
-        <div className="md:col-span-3 bg-white p-6 md:p-7 rounded-3xl border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between">
+        {/* Card 3: Đề xuất cần xem xét (5 cols) */}
+        <div className="md:col-span-5 bg-white p-6 md:p-7 rounded-3xl border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between">
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <h3 className="text-base font-extrabold text-slate-900">Đề xuất cần xem xét</h3>
@@ -714,7 +511,7 @@ export const DashboardPage: React.FC = () => {
 
               <div className="space-y-1">
                 <h4 className="font-extrabold text-sm text-slate-900">Đề xuất tái cơ cấu danh mục</h4>
-                <div className="text-[11px] font-medium text-slate-500">Ngày tạo: 20/05/2025</div>
+                <div className="text-[11px] font-medium text-slate-500">Ngày tạo: {pendingRecommendation?.generatedAt ? formatDate(pendingRecommendation.generatedAt) : formatDate(new Date().toISOString())}</div>
               </div>
 
               <p className="text-xs text-slate-600 leading-relaxed font-medium">
@@ -724,11 +521,11 @@ export const DashboardPage: React.FC = () => {
               <div className="pt-2 border-t border-amber-200/60 text-xs space-y-1">
                 <div className="flex justify-between">
                   <span className="text-slate-500 font-medium">Thay đổi cổ phiếu</span>
-                  <span className="font-bold text-slate-900">5</span>
+                  <span className="font-bold text-slate-900">{pendingRecommendation ? 3 : 2}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500 font-medium">Tổng giá trị</span>
-                  <span className="font-bold text-slate-900">1,234,567,890 ₫</span>
+                  <span className="font-bold text-slate-900">{formatVND(currentNAV)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500 font-medium">Hết hạn sau</span>
@@ -747,6 +544,49 @@ export const DashboardPage: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ROW 4: DANH MỤC NẮM GIỮ (FULL ROW) */}
+      <div className="bg-white p-6 md:p-7 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <h3 className="text-base font-extrabold text-slate-900">Danh mục nắm giữ</h3>
+          <Link
+            to="/app/portfolio"
+            className="text-xs font-extrabold text-blue-600 hover:underline flex items-center gap-1"
+          >
+            <span>Xem tất cả</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-slate-200 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider bg-slate-50">
+                <th className="py-2.5 px-4">Mã cổ phiếu</th>
+                <th className="py-2.5 px-4">Tên công ty</th>
+                <th className="py-2.5 px-4 text-right">Tỷ trọng</th>
+                <th className="py-2.5 px-4 text-right">Giá hiện tại</th>
+                <th className="py-2.5 px-4 text-right">Giá vốn</th>
+                <th className="py-2.5 px-4 text-right">Giá trị hiện tại</th>
+                <th className="py-2.5 px-4 text-right">Lãi/Lỗ</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 font-medium">
+              {holdingPositions.map((row: any) => (
+                <tr key={row.symbol} className="hover:bg-slate-50 transition-colors">
+                  <td className="py-3 px-4 font-black text-blue-600">{row.symbol}</td>
+                  <td className="py-3 px-4 font-bold text-slate-800">{row.name}</td>
+                  <td className="py-3 px-4 text-right font-extrabold text-slate-900">{row.weight}</td>
+                  <td className="py-3 px-4 text-right text-slate-700">{row.currentPrice.toLocaleString('vi-VN')}</td>
+                  <td className="py-3 px-4 text-right text-slate-500">{row.entryPrice.toLocaleString('vi-VN')}</td>
+                  <td className="py-3 px-4 text-right font-bold text-slate-900">{row.value.toLocaleString('vi-VN')}</td>
+                  <td className={`py-3 px-4 text-right font-black ${row.isProfit ? 'text-emerald-600' : 'text-rose-600'}`}>{row.pnl}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

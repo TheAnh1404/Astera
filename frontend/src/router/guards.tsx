@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Sparkles } from 'lucide-react';
 
-export const LoadingScreen: React.FC<{ title?: string }> = ({ title = 'Đang tải dữ liệu Astera...' }) => (
+export const LoadingScreen: React.FC<{ title?: string }> = ({ title = 'Đang tải dữ liệu Wealth4ward...' }) => (
   <div className="min-h-screen w-full bg-surface-bright flex flex-col items-center justify-center p-6">
     <div className="flex flex-col items-center gap-4 animate-in fade-in duration-300">
       <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-xl shadow-blue-500/20 animate-bounce">

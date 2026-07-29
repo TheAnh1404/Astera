@@ -1,4 +1,4 @@
-import { apiRequest } from './api-client';
+﻿import { apiRequest } from './api-client';
 import type { HistoryInterval, HistoryRange, StockHistoryView, StockView } from '@/types/api';
 
 export const stockService = {

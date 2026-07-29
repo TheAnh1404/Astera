@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Frown, AlertCircle, TrendingDown, ShieldAlert } from 'lucide-react';
 
 export const ProblemSection: React.FC = () => {

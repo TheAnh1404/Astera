@@ -58,7 +58,7 @@ export const DisclaimerModal: React.FC<DisclaimerModalProps> = ({
             <p className="font-semibold text-slate-900">Ghi chú quan trọng:</p>
             <p>• {disclaimerText}</p>
             <p>
-              • Danh mục được gợi ý tự động bằng mô hình AI Astera dựa trên phân tích chế độ thị trường (Market Regime) và hồ sơ rủi ro của bạn.
+              • Danh mục được gợi ý tự động bằng mô hình AI Wealth4ward dựa trên phân tích chế độ thị trường (Market Regime) và hồ sơ rủi ro của bạn.
             </p>
             <p>
               • Đây là hệ thống hỗ trợ quyết định mô phỏng. Kết quả trong quá khứ không đảm bảo hiệu suất lợi nhuận trong tương lai.

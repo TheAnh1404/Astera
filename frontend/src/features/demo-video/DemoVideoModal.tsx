@@ -29,7 +29,7 @@ export const DemoVideoModal: React.FC<DemoVideoModalProps> = ({ isOpen, onClose 
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h3 className="font-bold text-sm md:text-base">Astera AI Advisor Platform Walkthrough</h3>
+              <h3 className="font-bold text-sm md:text-base">Wealth4ward AI Advisor Platform Walkthrough</h3>
               <p className="text-xs text-slate-400">Institutional Wealth Management Interface</p>
             </div>
           </div>

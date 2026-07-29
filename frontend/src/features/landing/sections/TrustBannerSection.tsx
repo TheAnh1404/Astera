@@ -2,7 +2,7 @@ import React from 'react';
 
 export const TrustBannerSection: React.FC = () => {
   return (
-    <section id="why-astera" className="py-12 bg-white">
+    <section id="why-wealth4ward" className="py-12 bg-white">
       <div className="max-w-[1360px] mx-auto px-6 md:px-10">
         <div className="relative rounded-3xl bg-gradient-to-r from-slate-950 via-indigo-950 to-blue-950 p-8 md:p-14 text-white overflow-hidden shadow-2xl border border-slate-800">
           {/* Background Ambient Glows */}

@@ -44,7 +44,7 @@ export const LoginPage: React.FC = () => {
           className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-blue-600 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Quay lại Trang chủ Astera</span>
+          <span>Quay lại Trang chủ Wealth4ward</span>
         </Link>
 
         <div className="bg-white p-8 rounded-3xl border border-slate-200/80 shadow-xl space-y-6">
@@ -52,7 +52,7 @@ export const LoginPage: React.FC = () => {
             <div className="w-12 h-12 mx-auto rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
               <Sparkles className="w-6 h-6 fill-white" />
             </div>
-            <h2 className="text-2xl font-black text-slate-900">Đăng nhập Astera</h2>
+            <h2 className="text-2xl font-black text-slate-900">Đăng nhập Wealth4ward</h2>
             <p className="text-xs text-slate-500 font-medium">
               Truy cập Advisor cố vấn danh mục AI thông minh
             </p>
@@ -120,7 +120,7 @@ export const LoginPage: React.FC = () => {
           </form>
 
           <div className="pt-4 border-t border-slate-100 text-center text-xs text-slate-500 font-medium">
-            Chưa có tài khoản Astera?{' '}
+            Chưa có tài khoản Wealth4ward?{' '}
             <Link to="/register" className="font-bold text-blue-600 hover:underline">
               Đăng ký tài khoản mới
             </Link>

@@ -13,7 +13,7 @@ export const Footer: React.FC = () => {
                 <Sparkles className="w-4 h-4" />
               </div>
               <span className="text-xl font-black uppercase tracking-tight text-white">
-                ASTERA
+                Wealth4ward
               </span>
             </div>
             <p className="text-sm text-slate-400 font-normal leading-relaxed max-w-sm">
@@ -28,7 +28,7 @@ export const Footer: React.FC = () => {
               <li><a href="#features" className="hover:text-blue-400 transition-colors">Features</a></li>
               <li><a href="#how-it-works" className="hover:text-blue-400 transition-colors">How it works</a></li>
               <li><a href="#dashboard" className="hover:text-blue-400 transition-colors">Pricing</a></li>
-              <li><a href="#why-astera" className="hover:text-blue-400 transition-colors">Security</a></li>
+              <li><a href="#why-wealth4ward" className="hover:text-blue-400 transition-colors">Security</a></li>
             </ul>
           </div>
 
@@ -100,7 +100,7 @@ export const Footer: React.FC = () => {
 
         {/* Bottom copyright line */}
         <div className="pt-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 font-medium">
-          <p>© 2024 Astera. All rights reserved.</p>
+          <p>© 2024 Wealth4ward. All rights reserved.</p>
         </div>
       </div>
     </footer>

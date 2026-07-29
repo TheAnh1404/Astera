@@ -15,7 +15,7 @@ export const FinalCtaBanner: React.FC<FinalCtaBannerProps> = ({ onOpenAssessment
 
           <div className="relative z-10 max-w-xl text-center md:text-left">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight mb-3">
-              Sẵn sàng đầu tư thông minh cùng Astera?
+              Sẵn sàng đầu tư thông minh cùng Wealth4ward?
             </h2>
             <p className="text-sm sm:text-base text-blue-100 font-normal">
               Bắt đầu hành trình đầu tư kỷ luật và bền vững ngay hôm nay.

@@ -240,7 +240,7 @@ export const NotificationsPage: React.FC = () => {
         }
         message={
           actionType === 'APPLY'
-            ? 'Danh mục hiện tại sẽ được cập nhật phiên bản mới theo đề xuất tối ưu hóa AI Astera. Bạn có chắc chắn muốn áp dụng?'
+            ? 'Danh mục hiện tại sẽ được cập nhật phiên bản mới theo đề xuất tối ưu hóa AI Wealth4ward. Bạn có chắc chắn muốn áp dụng?'
             : 'Bạn có chắc muốn bỏ qua đề xuất này? Danh mục hiện tại sẽ được giữ nguyên.'
         }
         confirmText={actionType === 'APPLY' ? 'Xác nhận áp dụng' : 'Đồng ý bỏ qua'}

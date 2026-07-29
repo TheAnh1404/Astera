@@ -24,7 +24,7 @@ export const NotFoundPage: React.FC = () => {
             className="btn-primary text-white text-xs font-bold px-7 py-3 rounded-full inline-flex items-center gap-2 shadow-md"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Trở về Trang chủ Astera</span>
+            <span>Trở về Trang chủ Wealth4ward</span>
           </Link>
         </div>
       </div>

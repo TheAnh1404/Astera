@@ -91,7 +91,7 @@ export const InteractiveDashboardPreview: React.FC = () => {
               Your Portfolio, Reimagined.
             </h2>
             <p className="font-body-lg text-base md:text-body-lg text-on-surface-variant mt-2 max-w-lg">
-              Test how Astera AI adapts portfolio weightings in real time across different market conditions.
+              Test how Wealth4ward AI adapts portfolio weightings in real time across different market conditions.
             </p>
           </div>
 
@@ -216,7 +216,7 @@ export const InteractiveDashboardPreview: React.FC = () => {
                   <div className="w-3 h-3 rounded-full bg-amber-400" />
                   <div className="w-3 h-3 rounded-full bg-[#009668]" />
                   <span className="text-xs font-mono text-outline ml-2">
-                    Astera Wealth OS v2.4
+                    Wealth4ward Wealth OS v2.4
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-xs font-semibold text-on-surface-variant">

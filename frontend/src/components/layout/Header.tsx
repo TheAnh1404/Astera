@@ -46,7 +46,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAssessment, onOpenLiveDemo
             <Sparkles className="w-4 h-4 fill-white" />
           </div>
           <span className="text-xl font-extrabold tracking-tight text-slate-900 uppercase">
-            ASTERA
+            Wealth4ward
           </span>
         </Link>
 
@@ -58,8 +58,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAssessment, onOpenLiveDemo
           <a href="#how-it-works" className="text-sm font-semibold text-slate-700 hover:text-blue-600 transition-colors">
             Cách hoạt động
           </a>
-          <a href="#why-astera" className="text-sm font-semibold text-slate-700 hover:text-blue-600 transition-colors">
-            Vì sao Astera
+          <a href="#why-wealth4ward" className="text-sm font-semibold text-slate-700 hover:text-blue-600 transition-colors">
+            Vì sao Wealth4ward
           </a>
           <a href="#learn" className="text-sm font-semibold text-slate-700 hover:text-blue-600 transition-colors">
             Học đầu tư
@@ -120,7 +120,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAssessment, onOpenLiveDemo
           <nav className="flex flex-col space-y-3 font-semibold text-slate-700">
             <a href="#features" onClick={() => setMobileMenuOpen(false)}>Sản phẩm</a>
             <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)}>Cách hoạt động</a>
-            <a href="#why-astera" onClick={() => setMobileMenuOpen(false)}>Vì sao Astera</a>
+            <a href="#why-wealth4ward" onClick={() => setMobileMenuOpen(false)}>Vì sao Wealth4ward</a>
             <a href="#learn" onClick={() => setMobileMenuOpen(false)}>Học đầu tư</a>
             <a href="#about" onClick={() => setMobileMenuOpen(false)}>Về chúng tôi</a>
           </nav>

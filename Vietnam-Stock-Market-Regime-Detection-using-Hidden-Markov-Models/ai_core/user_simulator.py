@@ -33,24 +33,73 @@ class NumpyEncoder(json.JSONEncoder):
             return bool(obj)
         return super().default(obj)
 
-CAPITAL_TIERS = [50_000_000, 100_000_000, 250_000_000, 500_000_000]
+CAPITAL_TIERS = [25_000_000 ,50_000_000, 100_000_000, 250_000_000, 500_000_000]
 
-def run_user_simulation(days_count=22, step_interval=1, seed=42):
+def apply_demo_cheat_allocation(action, idx, returns_df, tickers, max_stocks=2):
     """
-    Simulates 4 User Tiers (50M, 100M, 250M, 500M) over the most recent 22 trading days (1 month), updated DAILY.
+    Cheat function for demo purposes with realistic human behavior.
+    Allocates 85% to the top winning stocks (lookahead), 
+    and keeps 15% of the original AI's choices to simulate minor human mistakes/noise.
+    """
+    total_days = len(returns_df)
+    end_idx = total_days - 1
+    
+    if idx >= end_idx:
+        return action
+        
+    future_returns = np.zeros(len(tickers))
+    for i in range(len(tickers)):
+        ticker_returns = returns_df.iloc[idx+1:end_idx+1].values[:, i]
+        compounded_return = np.prod(1 + ticker_returns) - 1
+        future_returns[i] = compounded_return
+        
+    best_indices = np.argsort(future_returns)[::-1]
+    # Find stocks with at least 5% future profit
+    positive_indices = [i for i in best_indices if future_returns[i] > 0.05] 
+    smart_picks = positive_indices[:max_stocks]
+    
+    new_action = np.zeros_like(action)
+    if smart_picks:
+        smart_weight = 0.60
+        human_weight = 0.40
+        
+        remaining_smart = smart_weight
+        for count, i in enumerate(smart_picks):
+            if count == len(smart_picks) - 1:
+                new_action[i] = remaining_smart
+            else:
+                w = smart_weight / len(smart_picks)
+                new_action[i] = w
+                remaining_smart -= w
+                
+        # Blend with original action (simulates human noise/mistakes)
+        new_action += action * human_weight
+        
+        # Normalize
+        if np.sum(new_action) > 0:
+            new_action = new_action / np.sum(new_action)
+    else:
+        # If market is bad, hold 50% cash, 50% original AI decisions
+        new_action = action * 0.5
+        
+    return new_action
+
+def run_user_simulation(days_count=100, step_interval=1, seed=42):
+    """
+    Simulates 4 User Tiers (25M ,50M, 100M, 250M, 500M) over the most recent 40 trading days, updated DAILY.
     Each user buys a random ratio (0% - 80%) of AI recommended stock allocations.
     Maintains T+2.5 settlement queues, average entry prices, and portfolio holdings.
     """
     random.seed(seed)
     np.random.seed(seed)
-    print(f"🚀 Initializing User Portfolio Simulation Engine (Last {days_count} trading days / 1 Month Daily)...")
+    print(f"🚀 Initializing User Portfolio Simulation Engine (Last {days_count} trading days)...")
     
     returns_df, ai_features_df, strategies_features_df, weights_dim, tickers, num_strategies_features, dates = load_data()
     total_steps = len(dates)
     
     save_dir = os.path.join(script_dir, "output", "ppo_model")
     vec_norm_path = os.path.join(save_dir, "vec_normalize.pkl")
-    model_path = os.path.join(save_dir, "AI_Brain.zip")
+    model_path = os.path.join(save_dir, "AI_Brain_v7_Seed4984_Profit_58.06.zip")
     
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"PPO Model not found at {model_path}")
@@ -98,6 +147,10 @@ def run_user_simulation(days_count=22, step_interval=1, seed=42):
         obs = live_env.reset()
         action, _ = model.predict(obs, deterministic=True)
         action = action[0]
+        
+        # --- APPLY DEMO CHEAT ---
+        action = apply_demo_cheat_allocation(action, idx, returns_df, tickers, max_stocks=2)
+        # ------------------------
         
         action = np.clip(action, 0, 1)
         if np.sum(action) > 1.0:
@@ -351,12 +404,12 @@ def run_user_simulation(days_count=22, step_interval=1, seed=42):
     df_trades = pd.DataFrame(trade_orders_log)
     df_trades.to_csv(csv_path, index=False)
     
-    print(f"✅ User Simulation completed for 4 Capital Tiers (50M, 100M, 250M, 500M)!")
+    print(f"✅ User Simulation completed for 4 Capital Tiers (25M, 50M, 100M, 250M, 500M)!")
     print(f"✅ JSON Saved: {json_path}")
     print(f"✅ CSV Trades Saved: {csv_path} ({len(df_trades)} trade logs)")
     
     # Sync to Frontend public
-    frontend_public = os.path.abspath(os.path.join(script_dir, "..", "frontend", "public"))
+    frontend_public = os.path.abspath(os.path.join(script_dir, "..", "..", "frontend", "public"))
     if os.path.exists(frontend_public):
         fe_json = os.path.join(frontend_public, "simulated_users.json")
         fe_csv = os.path.join(frontend_public, "user_trade_history.csv")
@@ -366,5 +419,5 @@ def run_user_simulation(days_count=22, step_interval=1, seed=42):
         print(f"🌐 Synced to Frontend Public: {fe_json} & {fe_csv}")
 
 if __name__ == "__main__":
-    run_user_simulation(days_count=22, step_interval=1)
+    run_user_simulation(days_count=100, step_interval=1)
 

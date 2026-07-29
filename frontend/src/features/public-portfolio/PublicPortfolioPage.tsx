@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layers, Activity, Calendar, PieChart } from 'lucide-react';
 import { Header, Footer } from '@/components/layout';
+import { DonutChart } from '@/components/common/DonutChart';
 
 // Define the shape of our historical allocation records
 interface AllocationItem {
@@ -72,6 +73,21 @@ export const PublicPortfolioPage: React.FC = () => {
   const dynamicUsedCapital = dynamicAllocations.reduce((sum, item) => sum + item.so_tien_chi, 0);
   const dynamicCashLeft = capitalInput - dynamicUsedCapital;
 
+  const donutItems = dynamicAllocations.map(alloc => ({
+    symbol: alloc.ma_co_phieu,
+    name: alloc.ma_co_phieu,
+    weight: alloc.ty_trong_thuc_te * 100,
+    amount: alloc.so_tien_chi,
+  }));
+  if (dynamicCashLeft > 0) {
+    donutItems.push({
+      symbol: 'TIỀN MẶT',
+      name: 'Tiền mặt',
+      weight: (dynamicCashLeft / capitalInput) * 100,
+      amount: dynamicCashLeft,
+    });
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-blue-600 selection:text-white">
       <Header 
@@ -104,122 +120,135 @@ export const PublicPortfolioPage: React.FC = () => {
             </div>
           ) : (
             <>
-              {/* Date Selector Timeline (Scrollable) */}
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
-                <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-blue-500" />
-                  Chọn Mốc Thời Gian (Phiên Giao Dịch)
-                </h3>
-                <div className="flex items-center gap-2">
+              {/* Controls Section */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {/* Date Selector */}
+                <div className="bg-white rounded-3xl p-6 shadow-xs border border-slate-200/80 space-y-3">
+                  <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-blue-600" />
+                    Mốc Thời Gian (Phiên Giao Dịch)
+                  </h3>
                   <select 
-                    className="w-full sm:w-auto text-sm font-bold text-slate-700 bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2 outline-none hover:bg-slate-100 focus:border-blue-500 focus:bg-white transition-all cursor-pointer"
+                    className="w-full text-sm font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 outline-none hover:bg-slate-100 focus:border-blue-500 transition-all cursor-pointer"
                     value={selectedDateIndex}
                     onChange={(e) => setSelectedDateIndex(Number(e.target.value))}
                   >
                     {historyData.map((record, index) => (
                       <option key={record.date} value={index}>
-                        Dữ liệu ngày: {record.date}
+                        Ngày: {record.date}
                       </option>
                     ))}
                   </select>
                 </div>
+
+                {/* Capital Selector */}
+                <div className="bg-white rounded-3xl p-6 shadow-xs border border-slate-200/80 space-y-3">
+                  <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-emerald-500" />
+                    Mô Phỏng Vốn Đầu Tư
+                  </h3>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <div className="flex flex-wrap gap-2">
+                      {[100000000, 500000000, 1000000000].map((val) => (
+                        <button
+                          key={val}
+                          onClick={() => setCapitalInput(val)}
+                          className={`px-3 py-1.5 rounded-lg text-[11px] font-extrabold transition-all ${
+                            capitalInput === val
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {(val / 1000000).toLocaleString('vi-VN')} Tr
+                        </button>
+                      ))}
+                    </div>
+                    <div className="relative w-full sm:w-auto flex-1">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">VNĐ</span>
+                      <input
+                        type="text"
+                        value={capitalInput ? capitalInput.toLocaleString('vi-VN') : ''}
+                        onChange={(e) => {
+                          const rawValue = e.target.value.replace(/\D/g, '');
+                          setCapitalInput(Number(rawValue));
+                        }}
+                        className="w-full text-right bg-slate-50 border border-slate-200 rounded-xl py-1.5 pl-10 pr-3 text-sm font-bold text-slate-700 focus:outline-none focus:border-emerald-500 transition-all"
+                        placeholder="Nhập vốn..."
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Capital Selector */}
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
-                <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-emerald-500" />
-                  Mô Phỏng Vốn Đầu Tư (VNĐ)
-                </h3>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex flex-wrap gap-2">
-                    {[50000000, 100000000, 500000000, 1000000000].map((val) => (
-                      <button
-                        key={val}
-                        onClick={() => setCapitalInput(val)}
-                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                          capitalInput === val
-                            ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-500'
-                            : 'bg-slate-50 text-slate-600 border-2 border-transparent hover:bg-slate-100'
-                        }`}
-                      >
-                        {(val / 1000000).toLocaleString('vi-VN')} Triệu
-                      </button>
-                    ))}
+              {/* Stats Row */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs relative overflow-hidden">
+                  <div className="relative z-10 space-y-1">
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tổng Vốn Mô Phỏng</p>
+                    <p className="text-2xl font-black text-slate-900">{capitalInput.toLocaleString('vi-VN')} <span className="text-sm font-bold text-slate-500">VNĐ</span></p>
                   </div>
-                  <div className="relative min-w-[200px]">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">VNĐ</span>
-                    <input
-                      type="text"
-                      value={capitalInput ? capitalInput.toLocaleString('vi-VN') : ''}
-                      onChange={(e) => {
-                        const rawValue = e.target.value.replace(/\D/g, '');
-                        setCapitalInput(Number(rawValue));
-                      }}
-                      className="w-full text-right bg-slate-50 border-2 border-slate-100 rounded-xl py-2 pl-12 pr-4 text-sm font-bold text-slate-700 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all"
-                      placeholder="Nhập số vốn tuỳ ý..."
+                </div>
+                
+                <div className="bg-emerald-50 rounded-3xl p-6 border border-emerald-100 shadow-xs relative overflow-hidden">
+                  <div className="relative z-10 space-y-1">
+                    <p className="text-xs font-bold text-emerald-600/80 uppercase tracking-wider">Vốn Phân Bổ (Cổ Phiếu)</p>
+                    <p className="text-2xl font-black text-emerald-600">{dynamicUsedCapital.toLocaleString('vi-VN')} <span className="text-sm font-bold text-emerald-500">VNĐ</span></p>
+                  </div>
+                  <div className="absolute -right-4 -bottom-4 opacity-10">
+                    <PieChart className="w-24 h-24 text-emerald-600" />
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 rounded-3xl p-6 border border-blue-100 shadow-xs relative overflow-hidden">
+                  <div className="relative z-10 space-y-1">
+                    <p className="text-xs font-bold text-blue-600/80 uppercase tracking-wider">Tiền Mặt Khả Dụng</p>
+                    <p className="text-2xl font-black text-blue-600">{dynamicCashLeft.toLocaleString('vi-VN')} <span className="text-sm font-bold text-blue-500">VNĐ</span></p>
+                  </div>
+                  <div className="absolute -right-4 -bottom-4 opacity-10">
+                    <Layers className="w-24 h-24 text-blue-600" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Main Dashboard UI Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                {/* Left Side: Donut Chart + Summary */}
+                <div className="lg:col-span-4 space-y-6">
+                  <div className="bg-white p-6 md:p-7 rounded-3xl border border-slate-200/80 shadow-xs space-y-6">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-base font-extrabold text-slate-900">Phân bổ danh mục</h3>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-700">
+                          {selectedRecord.date}
+                        </span>
+                      </div>
+                    </div>
+
+                    <DonutChart
+                      items={donutItems}
+                      centerLabel={capitalInput >= 1e9 ? `${(capitalInput / 1e9).toFixed(2)}B` : capitalInput >= 1e6 ? `${(capitalInput / 1e6).toFixed(1)}M` : capitalInput.toLocaleString('vi-VN')}
+                      centerSublabel="Tổng Vốn"
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* Portfolio Dashboard */}
-              <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                {/* Header Info */}
-                <div className="bg-slate-900 p-6 md:p-8 text-white flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
-                  <div className="absolute inset-0 opacity-10 pointer-events-none">
-                     {/* Decorative background pattern */}
-                     <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-                       <defs>
-                         <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                           <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="1" />
-                         </pattern>
-                       </defs>
-                       <rect width="100%" height="100%" fill="url(#grid)" />
-                     </svg>
+                {/* Right Side: Table View */}
+                <div className="lg:col-span-8 bg-white p-6 md:p-7 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+                  <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
+                    <Layers className="w-4 h-4 text-blue-600" />
+                    <h3 className="text-base font-extrabold text-slate-900">Chi Tiết Cổ Phiếu</h3>
                   </div>
                   
-                  <div className="z-10 text-center md:text-left">
-                    <h2 className="text-2xl font-black mb-1">
-                      Danh Mục Ngày {selectedRecord.date}
-                    </h2>
-                    <p className="text-slate-400 text-sm font-medium">
-                      Tổng vốn mô phỏng: <span className="text-white font-mono">{capitalInput.toLocaleString('vi-VN')} đ</span>
-                    </p>
-                  </div>
-                  
-                  <div className="z-10 flex gap-4 md:gap-8">
-                    <div className="bg-white/10 rounded-2xl p-4 text-center backdrop-blur-sm border border-white/10">
-                      <p className="text-xs font-bold text-slate-300 mb-1 uppercase tracking-wider">Vốn Phân Bổ</p>
-                      <p className="text-xl font-black font-mono text-emerald-400">
-                        {dynamicUsedCapital.toLocaleString('vi-VN')} đ
-                      </p>
-                    </div>
-                    <div className="bg-white/10 rounded-2xl p-4 text-center backdrop-blur-sm border border-white/10">
-                      <p className="text-xs font-bold text-slate-300 mb-1 uppercase tracking-wider">Tiền Mặt</p>
-                      <p className="text-xl font-black font-mono text-blue-300">
-                        {dynamicCashLeft.toLocaleString('vi-VN')} đ
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Table View */}
-                <div className="p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Layers className="w-5 h-5 text-blue-600" />
-                    <h3 className="font-extrabold text-slate-800 text-lg">Chi Tiết Tỷ Trọng Danh Mục</h3>
-                  </div>
-                  
-                  <div className="overflow-x-auto rounded-xl border border-slate-200">
-                    <table className="w-full text-left text-sm">
-                      <thead className="bg-slate-100 text-slate-600 uppercase font-bold text-[11px] tracking-wider">
-                        <tr>
-                          <th className="py-4 px-5">Mã CP</th>
-                          <th className="py-4 px-5 text-right">Số Lượng (Cổ Phiếu)</th>
-                          <th className="py-4 px-5 text-right">Giá Cổ Phiếu</th>
-                          <th className="py-4 px-5 text-right">Vốn Phân Bổ</th>
-                          <th className="py-4 px-5 text-right">Tỷ Trọng Thực Tế</th>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider bg-slate-50">
+                          <th className="py-2.5 px-4">Mã CP</th>
+                          <th className="py-2.5 px-4 text-right">Số Lượng</th>
+                          <th className="py-2.5 px-4 text-right">Giá Cổ Phiếu</th>
+                          <th className="py-2.5 px-4 text-right">Vốn Phân Bổ</th>
+                          <th className="py-2.5 px-4 text-right">Tỷ Trọng</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-slate-800 font-medium">
@@ -227,24 +256,21 @@ export const PublicPortfolioPage: React.FC = () => {
                           [...dynamicAllocations]
                             .sort((a, b) => b.ty_trong_thuc_te - a.ty_trong_thuc_te)
                             .map((item, idx) => (
-                            <tr key={item.ma_co_phieu} className="hover:bg-slate-50 transition-colors">
-                              <td className="py-4 px-5 font-black text-blue-600 flex items-center gap-2">
-                                <span className="w-6 h-6 rounded-md bg-blue-100 text-blue-600 flex items-center justify-center text-[10px]">
-                                  {idx + 1}
-                                </span>
+                            <tr key={item.ma_co_phieu} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="py-3 px-4 font-black text-blue-600 flex items-center gap-2">
                                 {item.ma_co_phieu}
                               </td>
-                              <td className="py-4 px-5 text-right font-extrabold text-slate-700">
+                              <td className="py-3 px-4 text-right font-extrabold text-slate-700">
                                 {item.so_co_phieu.toLocaleString('vi-VN')}
                               </td>
-                              <td className="py-4 px-5 text-right font-mono text-slate-500">
-                                {item.gia_hien_tai.toLocaleString('vi-VN')} đ
+                              <td className="py-3 px-4 text-right font-mono text-slate-500">
+                                {item.gia_hien_tai.toLocaleString('vi-VN')}
                               </td>
-                              <td className="py-4 px-5 text-right font-mono font-bold text-slate-800">
-                                {item.so_tien_chi.toLocaleString('vi-VN')} đ
+                              <td className="py-3 px-4 text-right font-mono font-bold text-slate-800">
+                                {item.so_tien_chi.toLocaleString('vi-VN')}
                               </td>
-                              <td className="py-4 px-5 text-right">
-                                <span className="inline-block px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-black text-xs">
+                              <td className="py-3 px-4 text-right">
+                                <span className="inline-block px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-black text-[10px]">
                                   {(item.ty_trong_thuc_te * 100).toFixed(2)}%
                                 </span>
                               </td>
@@ -253,7 +279,7 @@ export const PublicPortfolioPage: React.FC = () => {
                         ) : (
                           <tr>
                             <td colSpan={5} className="py-10 text-center text-slate-400">
-                              Danh mục trống hoặc đang nắm giữ 100% tiền mặt.
+                              Danh mục trống.
                             </td>
                           </tr>
                         )}

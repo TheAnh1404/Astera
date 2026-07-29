@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { formatPercent, formatVND } from '@/utils/formatters';
+import ReactApexChart from 'react-apexcharts';
 
 export interface AllocationChartItem {
   symbol: string;
@@ -10,7 +11,7 @@ export interface AllocationChartItem {
 }
 
 interface DonutChartProps {
-  items: AllocationChartItem[];
+  items: AllocationChartItem[] ;
   centerLabel?: string;
   centerSublabel?: string;
   size?: number;
@@ -33,19 +34,16 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   centerSublabel = 'Tổng phân bổ',
   size = 220,
 }) => {
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
-
   // Normalize items & weights
   const totalRawWeight = items.reduce((acc, item) => {
     const w = typeof item.weight === 'string' ? parseFloat(item.weight) : item.weight;
-    const normW = Math.abs(w) <= 1 && w !== 0 ? w * 100 : w;
-    return acc + (isNaN(normW) ? 0 : normW);
+    const finalW = isNaN(w) ? 0 : w;
+    return acc + finalW;
   }, 0);
 
   const formattedItems = items.map((item, idx) => {
     const rawW = typeof item.weight === 'string' ? parseFloat(item.weight) : item.weight;
-    const normW = Math.abs(rawW) <= 1 && rawW !== 0 ? rawW * 100 : rawW;
-    const finalW = isNaN(normW) ? 0 : normW;
+    const finalW = isNaN(rawW) ? 0 : rawW;
     return {
       ...item,
       normalizedWeight: finalW,
@@ -53,94 +51,73 @@ export const DonutChart: React.FC<DonutChartProps> = ({
     };
   });
 
-  // Calculate SVG arc paths
-  const radius = 80;
-  const strokeWidth = 24;
-  const circumference = 2 * Math.PI * radius;
-
-  let accumulatedPercent = 0;
+  const series = formattedItems.map(item => item.normalizedWeight);
+  
+  const options: any = {
+    chart: {
+      type: 'donut',
+      fontFamily: 'inherit',
+      
+    },
+    labels: formattedItems.map(item => item.symbol),
+    colors: formattedItems.map(item => item.color),
+    stroke: { width: 2, colors: ['#ffffff'] },
+    dataLabels: { enabled: false },
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '78%',
+          labels: {
+            show: true,
+            name: {
+              show: true,
+              fontSize: '12px',
+              fontWeight: 800,
+              color: '#94a3b8',
+              offsetY: -12
+            },
+            value: {
+              show: true,
+              fontSize: '22px',
+              fontWeight: 900,
+              color: '#0f172a',
+              formatter: (val: number) => formatPercent(val),
+              offsetY: -2
+            },
+            total: {
+              show: true,
+              showAlways: true,
+              label: centerSublabel || 'Tổng phân bổ',
+              fontSize: '11px',
+              fontWeight: 700,
+              color: '#94a3b8',
+              formatter: () => centerLabel || '100%'
+            }
+          }
+        }
+      }
+    },
+    tooltip: {
+      enabled: true,
+      y: { formatter: (val: number) => formatPercent(val) }
+    },
+    legend: { show: false }
+  };
 
   return (
-    <div className="flex flex-col md:flex-row items-center justify-center gap-8 w-full">
-      {/* SVG Donut */}
+    <div className="flex flex-col items-center justify-center gap-8 w-full">
+      {/* ApexChart Donut */}
       <div className="relative shrink-0 flex items-center justify-center" style={{ width: size, height: size }}>
-        <svg width={size} height={size} viewBox="0 0 200 200" className="transform -rotate-90">
-          <circle
-            cx="100"
-            cy="100"
-            r={radius}
-            fill="transparent"
-            stroke="#f1f5f9"
-            strokeWidth={strokeWidth}
-          />
-          {formattedItems.map((item, idx) => {
-            const pct = totalRawWeight > 0 ? item.normalizedWeight / totalRawWeight : 0;
-            const strokeDasharray = `${pct * circumference} ${circumference}`;
-            const strokeDashoffset = -accumulatedPercent * circumference;
-            accumulatedPercent += pct;
-
-            const isHovered = activeIndex === idx;
-
-            return (
-              <circle
-                key={item.symbol || idx}
-                cx="100"
-                cy="100"
-                r={radius}
-                fill="transparent"
-                stroke={item.color}
-                strokeWidth={isHovered ? strokeWidth + 4 : strokeWidth}
-                strokeDasharray={strokeDasharray}
-                strokeDashoffset={strokeDashoffset}
-                className="transition-all duration-300 cursor-pointer"
-                onMouseEnter={() => setActiveIndex(idx)}
-                onMouseLeave={() => setActiveIndex(null)}
-              />
-            );
-          })}
-        </svg>
-
-        {/* Center overlay label */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 pointer-events-none">
-          {activeIndex !== null ? (
-            <>
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                {formattedItems[activeIndex].symbol}
-              </span>
-              <span className="text-xl font-black text-slate-900">
-                {formatPercent(formattedItems[activeIndex].normalizedWeight)}
-              </span>
-              <span className="text-[11px] font-medium text-slate-500 truncate max-w-[120px]">
-                {formattedItems[activeIndex].name}
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                {centerSublabel}
-              </span>
-              <span className="text-2xl font-black text-slate-900">
-                {centerLabel ? centerLabel : `${totalRawWeight.toFixed(0)}%`}
-              </span>
-            </>
-          )}
-        </div>
+        <ReactApexChart options={options} series={series} type="donut" width={size} height={size} />
       </div>
 
       {/* Legend list */}
       <div className="flex-1 w-full space-y-2.5 max-h-[260px] overflow-y-auto pr-1">
         {formattedItems.map((item, idx) => {
-          const isHovered = activeIndex === idx;
           return (
             <div
               key={item.symbol || idx}
-              onMouseEnter={() => setActiveIndex(idx)}
-              onMouseLeave={() => setActiveIndex(null)}
-              className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-                isHovered
-                  ? 'bg-slate-50 border-slate-300 shadow-sm translate-x-1'
-                  : 'bg-white border-slate-100 hover:border-slate-200'
-              }`}
+              className="p-2.5 rounded-xl border transition-all flex items-center justify-between bg-white border-slate-100 hover:border-slate-300 hover:shadow-sm hover:-translate-y-0.5"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <span

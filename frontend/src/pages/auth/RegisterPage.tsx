@@ -42,7 +42,7 @@ export const RegisterPage: React.FC = () => {
     }
 
     if (!acceptedTerms) {
-      setErrorMessage('Vui lòng đồng ý với điều khoản dịch vụ Astera.');
+      setErrorMessage('Vui lòng đồng ý với điều khoản dịch vụ Wealth4ward.');
       return;
     }
 
@@ -75,7 +75,7 @@ export const RegisterPage: React.FC = () => {
           className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-blue-600 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Quay lại Trang chủ Astera</span>
+          <span>Quay lại Trang chủ Wealth4ward</span>
         </Link>
 
         {/* Register Card */}
@@ -173,7 +173,7 @@ export const RegisterPage: React.FC = () => {
                 <a href="#terms" className="font-bold text-blue-600 underline">
                   Điều khoản sử dụng
                 </a>{' '}
-                và hiểu rằng Astera cung cấp hỗ trợ mô phỏng đầu tư.
+                và hiểu rằng Wealth4ward cung cấp hỗ trợ mô phỏng đầu tư.
               </span>
             </label>
 
@@ -195,7 +195,7 @@ export const RegisterPage: React.FC = () => {
 
           {/* Login Link */}
           <div className="pt-4 border-t border-slate-100 text-center text-xs text-slate-500 font-medium">
-            Đã có tài khoản Astera?{' '}
+            Đã có tài khoản Wealth4ward?{' '}
             <Link to="/login" className="font-bold text-blue-600 hover:underline">
               Đăng nhập tại đây
             </Link>

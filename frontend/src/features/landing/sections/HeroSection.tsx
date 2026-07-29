@@ -49,7 +49,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
           {/* Subtitle */}
           <p className="text-base sm:text-lg text-slate-600 mb-10 max-w-xl leading-relaxed font-normal">
-            Astera là trợ lý đầu tư AI giúp bạn xây dựng danh mục đầu tư phù hợp, quản trị rủi ro và đạt mục tiêu tài chính dài hạn.
+            Wealth4ward là trợ lý đầu tư AI giúp bạn xây dựng danh mục đầu tư phù hợp, quản trị rủi ro và đạt mục tiêu tài chính dài hạn.
           </p>
 
           {/* CTA Buttons */}

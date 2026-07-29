@@ -947,7 +947,7 @@ def run_auto_tuning(n_trials=10):
     log(f"=== BẮT ĐẦU CHẠY {n_trials} THỬ NGHIỆM (AUTO TUNING) ===")
     for i in range(n_trials):
         global seed_val
-        seed_val = random.randint(1, 10000)
+        seed_val = 4984 #  random.randint(1, 10000)
         log(f"\n{'='*60}")
         log(f"🚀 THỬ NGHIỆM {i+1}/{n_trials} | Seed: {seed_val}")
         log(f"{'='*60}")

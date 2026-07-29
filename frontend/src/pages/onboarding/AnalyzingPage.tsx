@@ -72,7 +72,7 @@ export const AnalyzingPage: React.FC = () => {
             {/* Title */}
             <div className="space-y-2">
               <h2 className="text-2xl font-black text-slate-900">
-                AI Astera đang phân tích & xây dựng danh mục
+                AI Wealth4ward đang phân tích & xây dựng danh mục
               </h2>
               <p className="text-xs text-slate-500 font-medium">
                 Vui lòng đợi trong giây lát, hệ thống đang chạy mô hình tối ưu hóa tài sản...

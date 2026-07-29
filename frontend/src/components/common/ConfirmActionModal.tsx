@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { AlertTriangle, Check, X } from 'lucide-react';
 
 interface ConfirmActionModalProps {

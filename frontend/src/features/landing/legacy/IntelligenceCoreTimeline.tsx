@@ -79,10 +79,10 @@ export const IntelligenceCoreTimeline: React.FC = () => {
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-md text-xs mb-4">
             <Zap className="w-3.5 h-3.5 text-secondary" />
-            <span>HOW ASTERA THINKS</span>
+            <span>HOW Wealth4ward THINKS</span>
           </div>
           <h2 className="font-headline-lg text-3xl md:text-headline-lg text-on-background font-bold">
-            Astera Intelligence Core
+            Wealth4ward Intelligence Core
           </h2>
           <p className="font-body-lg text-body-lg text-on-surface-variant mt-2 max-w-xl mx-auto">
             How we process millions of data points into actionable discipline. Click any step to inspect the AI engine.

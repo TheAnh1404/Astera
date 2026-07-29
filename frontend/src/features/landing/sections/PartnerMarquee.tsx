@@ -1,4 +1,4 @@
-import { ChevronRight, Database, Cpu, Cloud, LineChart, Globe } from 'lucide-react';
+﻿import { ChevronRight, Database, Cpu, Cloud, LineChart, Globe } from 'lucide-react';
 
 export function PartnerMarquee() {
   const partners = [

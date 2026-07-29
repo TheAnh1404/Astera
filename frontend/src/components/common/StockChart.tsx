@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import type { StockPricePoint } from '@/types/api';
 import { formatDate, formatVND } from '@/utils/formatters';
 

@@ -18,7 +18,7 @@ interface LiveDemoPageHeaderProps {
  * language consistent while exposing only real API state on authenticated pages.
  */
 export const LiveDemoPageHeader: React.FC<LiveDemoPageHeaderProps> = ({
-  eyebrow = 'ASTERA AI INVESTMENT CONSOLE',
+  eyebrow = 'Wealth4ward AI INVESTMENT CONSOLE',
   title,
   description,
   regime,
@@ -53,7 +53,7 @@ export const LiveDemoPageHeader: React.FC<LiveDemoPageHeaderProps> = ({
             <span className="inline-flex items-center gap-1.5">
               <Activity className="h-3.5 w-3.5 text-emerald-300" />
               <span>Model:</span>
-              <span className="font-black text-slate-200">{regime?.modelVersion || 'Astera HMM Core'}</span>
+              <span className="font-black text-slate-200">{regime?.modelVersion || 'Wealth4ward HMM Core'}</span>
             </span>
           </div>
         </div>

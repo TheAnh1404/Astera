@@ -1,12 +1,12 @@
-import type { ApiErrorDetail, ApiSuccessResponse, TokenPair } from '@/types/api';
+﻿import type { ApiErrorDetail, ApiSuccessResponse, TokenPair } from '@/types/api';
 
 const DEFAULT_BASE_URL = 'http://localhost:8000/api/v1';
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || DEFAULT_BASE_URL;
 
-const TOKEN_STORAGE_KEY = 'astera_access_token';
-const REFRESH_TOKEN_STORAGE_KEY = 'astera_refresh_token';
+const TOKEN_STORAGE_KEY = 'wealth4ward_access_token';
+const REFRESH_TOKEN_STORAGE_KEY = 'wealth4ward_refresh_token';
 
 export function getStoredAccessToken(): string | null {
   return localStorage.getItem(TOKEN_STORAGE_KEY);
@@ -119,7 +119,7 @@ export async function apiRequest<T>(
       if (newToken) {
         return apiRequest<T>(endpoint, options, true);
       } else {
-        window.dispatchEvent(new Event('astera:unauthorized'));
+        window.dispatchEvent(new Event('wealth4ward:unauthorized'));
         throw new ApiError(401, 'AUTH_TOKEN_EXPIRED', 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
       }
     } else {
