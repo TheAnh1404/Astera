@@ -37,3 +37,9 @@ __pycache__/
 *.njsproj
 *.sln
 *.sw?
+
+# User simulator generated data
+Vietnam-Stock-Market-Regime-Detection-using-Hidden-Markov-Models/ai_core/simulated_users.json
+Vietnam-Stock-Market-Regime-Detection-using-Hidden-Markov-Models/ai_core/user_trade_history.csv
+frontend/public/simulated_users.json
+frontend/public/user_trade_history.csv
