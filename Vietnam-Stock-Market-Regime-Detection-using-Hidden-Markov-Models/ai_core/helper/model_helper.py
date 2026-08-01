@@ -91,7 +91,6 @@ def auto_label_sector(rs, K):
         sharpe = ret / (vol + 1e-9)
         order = np.argsort(sharpe)
         return {int(order[0]): 'Bear', int(order[1]): 'Sideways', int(order[2]): 'Bull'}
-    # Sắp xếp theo tỉ lệ sharpe 
     elif K >= 4:
         from scipy.optimize import linear_sum_assignment
         ret_Z = (ret - np.mean(ret)) / (np.std(ret) + 1e-9)

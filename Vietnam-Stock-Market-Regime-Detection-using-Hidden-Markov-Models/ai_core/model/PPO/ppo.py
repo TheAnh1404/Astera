@@ -157,7 +157,7 @@ class CONFIG:
 
     # Các giá trị tính điểm (Reward/Penalty System)
     REWARD_WIN_MULT = 100
-    REWARD_LOSS_MULT = 200
+    REWARD_LOSS_MULT = 500
     REWARD_ALPHA_MULT = 50
     REWARD_CASH_CRASH_MULT = 100
     PENALTY_OVER_DIVERSIFICATION = 0.01
@@ -176,7 +176,7 @@ class CONFIG:
     # Quyết định AI sẽ All-in hay Rải rác.
     # Giá trị nhỏ (0.001) -> Ưu tiên All-in vài mã mạnh nhất.
     # Giá trị lớn (0.05) -> Ưu tiên chia đều tiền ra mua nhiều mã để phân tán rủi ro.
-    ENT_COEF = 0.005
+    ENT_COEF = 0.025
 
     # 10. NEURAL NETWORK & PPO HYPERPARAMETERS
     FEATURES_DIM = 256
@@ -552,11 +552,9 @@ class AdvancedPortfolioEnv(gym.Env):
             self.prev_weights = self.weights.copy()
             self.weights = action
 
-            # SỬA LỖI LOOKAHEAD BIAS: Mô hình phải ăn lợi nhuận của ngày T+3
-            # (Thị trường VN là T+2.5, làm tròn T+3 để thuận tiện dữ liệu)
-            if self.current_step + 3 < self.n_steps:
-                next_return = self.returns_arr[self.current_step + 3]
-            elif self.current_step + 1 < self.n_steps:
+            # FIX: Loại bỏ T+3 lố bịch. NAV phải biến động MỖI NGÀY theo thị trường (T+1)
+            # Sự đau đớn của việc "hàng chưa về mà giá giảm" đã được xử lý bằng hàng đợi FIFO (locked_weights) bên trên!
+            if self.current_step + 1 < self.n_steps:
                 next_return = self.returns_arr[self.current_step + 1]
             else:
                 next_return = np.zeros(self.weights_dim)
@@ -566,11 +564,10 @@ class AdvancedPortfolioEnv(gym.Env):
 
             self.current_portfolio_value = self.current_portfolio_value * (1 + daily_ret)
 
-            # V7.2 Fix: Hàm Reward mượt mà, tránh sợ hãi cực độ
-
+            # V7.2 Fix: Hàm Reward phòng thủ cao (Defensive)
             base_reward = daily_ret * 100 
             if daily_ret < 0:
-                base_reward *= 2.0  # Phạt gấp 2 lần nếu lỗ
+                base_reward *= 5.0  # Phạt gấp 5 lần nếu lỗ (trước đây là 2.0)
 
             reward = base_reward
 
@@ -641,14 +638,14 @@ class AdvancedPortfolioEnv(gym.Env):
             prev_dd = getattr(self, 'prev_drawdown', 0.0)
             if drawdown > prev_dd:
                 dd_increase = drawdown - prev_dd
-                reward -= (dd_increase * 1000)
+                reward -= (dd_increase * 3000)  # Phạt sụt giảm tài sản cực nặng (trước đây là 1000)
             self.prev_drawdown = drawdown
             force_terminate = False
-            if drawdown > 0.30:
-                reward -= 100
+            if drawdown > 0.15: # Cháy tài khoản nếu lỗ 15% từ đỉnh (trước đây là 30%)
+                reward -= 500  # Phạt 500 điểm nếu cháy tài khoản
                 force_terminate = True
                 if getattr(self, 'is_test', False):
-                    print(f"💀 GAME OVER: Cháy tài khoản! Drawdown {drawdown*100:.1f}% tại Step {self.current_step}")
+                    print(f"💀 GAME OVER: Chạm ngưỡng phòng thủ! Drawdown {drawdown*100:.1f}% tại Step {self.current_step}")
             # -----------------------------------------------------------
             self.current_step += 1
             done = (self.current_step >= self.n_steps - 1) or force_terminate
@@ -661,7 +658,7 @@ log("NEURAL NETWORK STRUCTURE")
 class AdvancedTickerExtractor(BaseFeaturesExtractor):
         def __init__(self, observation_space: spaces.Box, features_dim: int = 256):
             super().__init__(observation_space, features_dim)
-            num_tickers = observation_space.shape[0] # 46 mã
+            num_tickers = observation_space.shape[0] # 60 mã
             num_features_per_ticker = observation_space.shape[1] # 11 tính năng
             # Tầng 1 (Local): Học phân tích RIÊNG LẺ
             self.ticker_net = nn.Sequential(
@@ -726,11 +723,11 @@ def run_training_cycle():
     all_test_returns = []
 
     if TRAINING_MODE == 'fast_split':
+        train_ratio = 0.8
+        val_ratio = 0.1
         log(f"\n=======================================================")
-        log(f"--- CHẾ ĐỘ HỌC NHANH (FAST SPLIT: 70% Train, 15% Val, 15% Test) ---")
+        log(f"--- CHẾ ĐỘ HỌC NHANH (FAST SPLIT: {train_ratio * 100}% Train, {val_ratio * 100}% Val, {val_ratio * 100}% Test) ---")
 
-        train_ratio = 0.7
-        val_ratio = 0.15
 
         train_end = int(total_days * train_ratio)
         val_end = int(total_days * (train_ratio + val_ratio))
@@ -768,15 +765,15 @@ def run_training_cycle():
 
         CONFIG.T_PLUS_SETTLEMENT = 0
         log("Giai đoạn 1: Huấn luyện với T+0 (100,000 steps)...")
-        model.learn(total_timesteps=10000, reset_num_timesteps=False)
+        model.learn(total_timesteps=100000, reset_num_timesteps=False)
 
         CONFIG.T_PLUS_SETTLEMENT = 1
         log("Giai đoạn 2: Huấn luyện với T+1 (100,000 steps)...")
-        model.learn(total_timesteps=10000, reset_num_timesteps=False)
+        model.learn(total_timesteps=100000, reset_num_timesteps=False)
 
         CONFIG.T_PLUS_SETTLEMENT = 3
         log("Giai đoạn 3: Huấn luyện với T+3 (300,000 steps)...")
-        model.learn(total_timesteps=30000, reset_num_timesteps=False)
+        model.learn(total_timesteps=300000, reset_num_timesteps=False)
 
         model.save(os.path.join(save_dir, "AI_Brain.zip"))
         train_env.save(os.path.join(save_dir, "vec_normalize.pkl"))
@@ -907,7 +904,7 @@ def run_training_cycle():
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     old_model_name = os.path.join(save_dir, "AI_Brain.zip")
-    new_model_name = os.path.join(save_dir, f"AI_Brain_v7_Seed{seed_val}_Profit_{total_profit:.2f}.zip")
+    new_model_name = os.path.join(save_dir, f"AI_Brain_v8_Seed{seed_val}_Profit_{total_profit:.2f}.zip")
 
     if os.path.exists(old_model_name):
         shutil.copy(old_model_name, new_model_name)
@@ -947,7 +944,7 @@ def run_auto_tuning(n_trials=10):
     log(f"=== BẮT ĐẦU CHẠY {n_trials} THỬ NGHIỆM (AUTO TUNING) ===")
     for i in range(n_trials):
         global seed_val
-        seed_val = 4984 #  random.randint(1, 10000)
+        seed_val = random.randint(1, 10000)
         log(f"\n{'='*60}")
         log(f"🚀 THỬ NGHIỆM {i+1}/{n_trials} | Seed: {seed_val}")
         log(f"{'='*60}")
@@ -973,7 +970,7 @@ if __name__ == "__main__":
     # CÔNG TẮC BẬT/TẮT AUTO TUNING
     # ==========================================
     ENABLE_AUTO_TUNING = True  # Đổi thành True để chạy N lần tự động đổi tham số
-    N_TRIALS = 15  # Số lần muốn chạy
+    N_TRIALS = 10  # Số lần muốn chạy
 
     if ENABLE_AUTO_TUNING:
         run_auto_tuning(n_trials=N_TRIALS)
