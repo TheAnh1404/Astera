@@ -5,11 +5,10 @@ import numpy as np
 import traceback
 
 sys.stdout.reconfigure(encoding='utf-8')
-
 sys.path.append(r'C:\Users\ADMIN\Desktop\AIQUANTUM\ai_core\model\PPO')
 from ppo import load_data, AdvancedPortfolioEnv, allocate_portfolio_real
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
+from stable_baselines3.common.vec_env import DummyVecEnv
 
 sys.path.append(r'C:\Users\ADMIN\Desktop\AIQUANTUM')
 from ai_core.helper.circuit_breaker import get_circuit_breaker_flags
@@ -19,34 +18,29 @@ def calc_metrics(returns):
     total_return = cum_ret.iloc[-1] - 1
     annualized_return = (1 + total_return)**(252 / len(returns)) - 1
     sharpe_ratio = np.sqrt(252) * (returns.mean() / returns.std()) if returns.std() != 0 else 0
-
     rolling_max = cum_ret.cummax()
     drawdowns = (cum_ret - rolling_max) / rolling_max
     max_drawdown = drawdowns.min()
-
     win_rate = (returns > 0).mean()
     return total_return, annualized_return, sharpe_ratio, max_drawdown, win_rate
 
-def analyze_model_allocations():
-    # Khởi tạo mặc định
+def run_continuous_learning():
+    # 1. Khởi tạo dữ liệu
+    print("🔄 Nạp dữ liệu thị trường...")
     returns_df, ai_features_df, strategies_features_df, weights_dim, tickers, num_strategies_features, dates = load_data(macro_mode=50)
     
     script_dir = r"C:\Users\ADMIN\Desktop\AIQUANTUM\ai_core\model\PPO"
     root_dir = os.path.abspath(os.path.join(script_dir, "..", ".."))
     model_dir = os.path.join(root_dir, "output", "ppo_model")
     
-    # Target model
     model_name = "AI_Brain_v8_Seed946_Profit_51.07.zip"
     model_path = os.path.join(model_dir, model_name)
-    env_path = os.path.join(model_dir, "vec_normalize.pkl")
-    
-    print(f"🔄 Đang nạp bộ não từ {model_name} để phân tích hành vi...")
     
     try:
-        model = PPO.load(model_path)
-        expected_shape = model.observation_space.shape[1]
+        # Load Model Gốc để lấy số nơ-ron
+        temp_model = PPO.load(model_path)
+        expected_shape = temp_model.observation_space.shape[1]
         
-        # Load lại features df tương ứng với số nơ-ron của model
         if expected_shape == 44:
             _, ai_features_df, _, _, _, _, _ = load_data(macro_mode=44)
         elif expected_shape == 47:
@@ -56,25 +50,28 @@ def analyze_model_allocations():
         test_size = int(total_days * 0.1)
         test_start = total_days - test_size
 
+        # Dữ liệu Test
         returns_test = returns_df.iloc[test_start:]
         ai_test = ai_features_df.iloc[test_start:]
         strategies_test = strategies_features_df.iloc[test_start:]
         dates_test = dates[test_start:]
-        
         circuit_breaker_flags = get_circuit_breaker_flags(dates_test)
 
         test_env = DummyVecEnv([lambda: AdvancedPortfolioEnv(
                 returns_test, ai_test, strategies_test, weights_dim, num_strategies_features, tickers=tickers, dates=dates_test, is_test=True
             )])
+
+        print(f"🚀 BẮT ĐẦU MÔ PHỎNG CONTINUOUS LEARNING VỚI MODEL: {model_name}")
+        print("Cơ chế: Mỗi 20 ngày (1 tháng), AI sẽ dừng lại, đọc lại dữ liệu 200 ngày gần nhất và tự cập nhật não bộ (Retraining).")
         
-        # Không load VecNormalize vì norm_obs=False trong ppo.py và dễ gây lộn shape
+        # Load lại model tươi mới để chạy
+        model = PPO.load(model_path)
+        
         obs = test_env.reset()
         done = [False]
         
-        action_history = []
         portfolio_returns = []
         benchmark_returns = []
-        transaction_logs = []
 
         C_initial = 100_000_000.0
         cash = C_initial
@@ -82,29 +79,29 @@ def analyze_model_allocations():
         prev_nav = C_initial
         holdings = {}
 
+        transaction_logs = []
         step_idx = 0
+        update_frequency = 5 # Cứ 20 ngày giao dịch (1 tháng) thì học lại 1 lần
         
+        start_date_str = dates_test[0]
+        end_date_str = dates_test[len(portfolio_returns)-1]
         while not done[0]:
+            # Đánh giá (Predict) như bình thường
             action, _states = model.predict(obs, deterministic=True)
             obs, reward, done, info = test_env.step(action)
-            action_history.append(action[0])
-            
             raw_action = np.clip(action[0], 0, 1)
             
-            # --- Áp dụng Circuit Breaker (Kill-switch) ---
+            # --- Kill-switch & Portfolio Allocation Logic (Rút gọn để mô phỏng NAV) ---
             hold_cash_today = circuit_breaker_flags[step_idx]
             if hold_cash_today:
                 raw_action = np.zeros_like(raw_action)
             else:
-                # CẤU HÌNH SỐ LƯỢNG MÃ TỐI ĐA (Giả lập cho Ví thực)
                 TOP_N_STOCKS = 3
                 if TOP_N_STOCKS is not None and TOP_N_STOCKS < len(raw_action):
                     top_n_indices = np.argsort(raw_action)[-TOP_N_STOCKS:]
                     mask = np.ones(len(raw_action), dtype=bool)
                     mask[top_n_indices] = False
                     raw_action[mask] = 0.0
-                    
-                # Chuẩn hóa lại tỷ trọng của Top 5 sao cho tổng bằng đúng 100% (1.0)
                 current_sum = np.sum(raw_action)
                 if current_sum > 0:
                     raw_action = raw_action / current_sum
@@ -114,7 +111,7 @@ def analyze_model_allocations():
             current_prices_vnd = raw_prices * 1000.0
             price_dict = {tickers[i]: float(current_prices_vnd[i]) for i in range(weights_dim)}
 
-            # 1. Cập nhật ngày T+
+            # T+ Update
             total_stock_val = 0.0
             new_holdings = {}
             for ticker, h in holdings.items():
@@ -124,20 +121,17 @@ def analyze_model_allocations():
                 h["shares_t1"] = h["shares_t2"]
                 h["shares_t2"] = 0
                 h["so_co_phieu"] = h["shares_unlocked"] + h["shares_t1"] + h["shares_t2"]
-                
                 if h["so_co_phieu"] > 0:
                     total_stock_val += h["so_co_phieu"] * cur_price
                     new_holdings[ticker] = h
             holdings = new_holdings
             nav = cash + total_stock_val
 
-            # 2. Allocate
-            ai_alloc = allocate_portfolio_real(
-                tickers=tickers, w=raw_action, p=raw_prices, C=nav, LOT_SIZE=100
-            )
-            
+            # Phân bổ
+            ai_alloc = allocate_portfolio_real(tickers=tickers, w=raw_action, p=raw_prices, C=nav, LOT_SIZE=100)
             target_shares_map = {rec['ma_co_phieu']: rec['so_co_phieu'] for rec in ai_alloc['allocations']}
             
+            # Bán
             for ticker in list(holdings.keys()):
                 cur_h = holdings[ticker]
                 target_shares = target_shares_map.get(ticker, 0)
@@ -170,6 +164,7 @@ def analyze_model_allocations():
                         if cur_h["so_co_phieu"] == 0:
                             del holdings[ticker]
                             
+            # Mua
             for rec in ai_alloc['allocations']:
                 ticker = rec['ma_co_phieu']
                 target_shares = rec['so_co_phieu']
@@ -179,14 +174,13 @@ def analyze_model_allocations():
                 
                 if target_shares > current_shares:
                     buy_shares = target_shares - current_shares
-                    cost = buy_shares * price * (1 + 0.001)  # Phí mua 0.1%
+                    cost = buy_shares * price * 1.001
                     if cash < cost:
-                        buy_shares = int(np.floor(cash / (price * (1 + 0.001) * 100))) * 100
-                        cost = buy_shares * price * (1 + 0.001)
+                        buy_shares = int(np.floor(cash / (price * 1.001 * 100))) * 100
+                        cost = buy_shares * price * 1.001
                         
                     if buy_shares > 0:
                         fee = buy_shares * price * 0.001
-                        
                         transaction_logs.append({
                             "Ngày": dates_test[step_idx],
                             "Mã CP": ticker,
@@ -201,11 +195,9 @@ def analyze_model_allocations():
                         
                         cash -= cost
                         if not cur_h:
-                            holdings[ticker] = {
-                                "so_co_phieu": 0, "gia_von": price, "gia_hien_tai": price,
-                                "shares_unlocked": 0, "shares_t1": 0, "shares_t2": 0
-                            }
+                            holdings[ticker] = {"so_co_phieu": 0, "gia_von": price, "gia_hien_tai": price, "shares_unlocked": 0, "shares_t1": 0, "shares_t2": 0}
                             cur_h = holdings[ticker]
+                        
                         new_total = cur_h["so_co_phieu"] + buy_shares
                         cur_h["gia_von"] = ((cur_h["so_co_phieu"] * cur_h["gia_von"]) + cost) / new_total
                         cur_h["so_co_phieu"] = new_total
@@ -223,19 +215,38 @@ def analyze_model_allocations():
                 
             bm_ret = np.mean(returns_test.iloc[step_idx].values)
             benchmark_returns.append(bm_ret)
-            
             prev_nav = nav
             step_idx += 1
             
-        action_df = pd.DataFrame(action_history, columns=tickers, index=dates_test[:len(action_history)])
-        action_df = action_df.loc[:, action_df.max() > 0.01]
-        mean_alloc = action_df.mean().sort_values(ascending=False)
-        
-        action_df['CASH'] = 1.0 - action_df.sum(axis=1)
-        action_df['CASH'] = action_df['CASH'].clip(lower=0)
-        cash_holdings = action_df['CASH'].mean()
-        turnover_rate = action_df.drop(columns=['CASH']).diff().abs().sum(axis=1).mean()
-        
+            # ==========================================
+            # CONTINUOUS LEARNING LOGIC (TỰ HỌC CUỐI THÁNG)
+            # ==========================================
+            if step_idx % update_frequency == 0 and not done[0]:
+                print(f"⏳ [Ngày {step_idx}/{len(dates_test)}] Đang tự học rút kinh nghiệm từ tháng vừa qua...")
+                
+                # Tạo môi trường học cho 200 ngày gần nhất (Rolling Window)
+                current_global_idx = test_start + step_idx
+                train_start_idx = max(0, current_global_idx - 200)
+                
+                roll_returns = returns_df.iloc[train_start_idx:current_global_idx]
+                roll_ai = ai_features_df.iloc[train_start_idx:current_global_idx]
+                roll_strat = strategies_features_df.iloc[train_start_idx:current_global_idx]
+                roll_dates = dates[train_start_idx:current_global_idx]
+                
+                # Khởi tạo môi trường Train siêu nhỏ
+                train_env_roll = DummyVecEnv([lambda: AdvancedPortfolioEnv(
+                    roll_returns, roll_ai, roll_strat, weights_dim, num_strategies_features, tickers=tickers, dates=roll_dates
+                )])
+                
+                # Cho model cắm vào môi trường này và học 1024 steps
+                model.set_env(train_env_roll)
+                model.learn(total_timesteps=1024, reset_num_timesteps=False)
+                
+                # Trả lại môi trường Test để đi thi tiếp
+                model.set_env(test_env)
+                print(f"✅ Hoàn tất cập nhật kiến thức! Sẵn sàng giao dịch tháng tiếp theo.")
+
+        # HẾT VÒNG LẶP TEST
         perf_df = pd.DataFrame({
             'Real_Simulation': portfolio_returns,
             'Benchmark_EQ': benchmark_returns
@@ -249,37 +260,27 @@ def analyze_model_allocations():
         alpha = ai_ann - (beta * bm_ann)
         
         print("\n=========================================================")
-        print("🔍 PHÂN TÍCH HÀNH VI: AI YÊU THÍCH CỔ PHIẾU NÀO NHẤT?")
+        print("🏆 KẾT QUẢ CỦA CONTINUOUS LEARNING BOT (TỰ HỌC CUỐN CHIẾU)")
         print("=========================================================")
-        print(mean_alloc.head(10).apply(lambda x: f"{x*100:.2f}%").to_string())
-        
-        start_date_str = dates_test[0]
-        end_date_str = dates_test[len(portfolio_returns)-1]
-        
-        print("\n=========================================================")
-        print("💡 ĐÁNH GIÁ PHONG CÁCH & HIỆU SUẤT GIAO DỊCH (HỌC LÌ LỢM)")
-        print("=========================================================")
-        print(f"Tên Model:                 {model_name}")
         print(f"🕒 Khoảng thời gian:      {start_date_str} đến {end_date_str} ({len(portfolio_returns)} phiên)")
         print(f"💰 Số Tiền Ban Đầu:       {C_initial:,.0f} VNĐ")
         print(f"💰 Số Tiền NAV Cuối:      {nav:,.0f} VNĐ")
-        print(f"📈 Tốc độ xoay vòng vốn:  {turnover_rate*100:.2f}% / ngày")
-        print(f"💵 Tiền mặt trung bình:   {cash_holdings*100:.2f}%")
         print("---------------------------------------------------------")
         print(f"📊 Tổng Lợi Nhuận:        {ai_tot*100:.2f}%")
-        print(f"📊 Lợi Nhuận Quy Năm:     {ai_ann*100:.2f}%")
         print(f"📊 Sharpe Ratio:          {ai_sharpe:.3f}")
         print(f"📊 Max Drawdown:          {ai_mdd*100:.2f}%")
         print("---------------------------------------------------------")
-        print(f"⚖️ Alpha (Năng lực AI):   {alpha*100:.2f}% (Vượt trội so với Benchmark)")
-        print(f"⚖️ Beta (Độ nhạy Market): {beta:.3f}")
+        print(f"⚖️ Alpha (Năng lực AI):   {alpha*100:.2f}%")
         print("=========================================================")
         
+        # LƯU FILE LOG CHI TIẾT
         if transaction_logs:
+            output_dir = os.path.join(root_dir, 'output')
+            os.makedirs(output_dir, exist_ok=True)
             tx_df = pd.DataFrame(transaction_logs)
-            out_path = r"C:\Users\ADMIN\Desktop\AIQUANTUM\ai_core\output\detailed_transaction_log.csv"
-            tx_df.to_csv(out_path, index=False, encoding='utf-8-sig')
-            print(f"📁 Đã lưu nhật ký giao dịch chi tiết tại: {out_path}")
+            tx_file = os.path.join(output_dir, "continuous_transaction_log.csv")
+            tx_df.to_csv(tx_file, index=False, encoding='utf-8-sig')
+            print(f"✅ Đã lưu chi tiết giao dịch tại: {tx_file}")
             
         # Xuất dữ liệu NAV hằng ngày để vẽ biểu đồ
         nav_df = pd.DataFrame({
@@ -289,7 +290,9 @@ def analyze_model_allocations():
         })
         nav_df['AI_Cum_Return (%)'] = ((1 + nav_df['AI_Return']).cumprod() - 1) * 100
         nav_df['Benchmark_Cum_Return (%)'] = ((1 + nav_df['Benchmark_Return']).cumprod() - 1) * 100
-        nav_out_path = r"C:\Users\ADMIN\Desktop\AIQUANTUM\ai_core\output\daily_nav_log.csv"
+        output_dir = os.path.join(root_dir, 'output')
+        os.makedirs(output_dir, exist_ok=True)
+        nav_out_path = os.path.join(output_dir, "continuous_daily_nav_log.csv")
         nav_df.to_csv(nav_out_path, index=False)
         print(f"📁 Đã lưu dữ liệu NAV hằng ngày tại: {nav_out_path}")
         
@@ -333,7 +336,7 @@ def analyze_model_allocations():
             plt.grid(color='#333333', linestyle='-.', linewidth=0.5, alpha=0.5)
             plt.tight_layout()
             
-            plot_file = os.path.join(os.path.dirname(nav_out_path), "spline_nav_chart.png")
+            plot_file = os.path.join(output_dir, "continuous_spline_nav_chart.png")
             plt.savefig(plot_file, dpi=300)
             import sys
             sys.stdout.buffer.write(f"📁 Đã lưu biểu đồ Spline Area tại: {plot_file}\n".encode('utf-8'))
@@ -345,4 +348,4 @@ def analyze_model_allocations():
         traceback.print_exc()
 
 if __name__ == "__main__":
-    analyze_model_allocations()
+    run_continuous_learning()

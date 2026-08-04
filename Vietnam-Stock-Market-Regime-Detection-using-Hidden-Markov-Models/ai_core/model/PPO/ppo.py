@@ -144,9 +144,9 @@ def allocate_portfolio_real(tickers, w, p, C, LOT_SIZE=100, tracking_err_thresho
 # ## [CẤU HÌNH CHIẾN LƯỢC ĐẦU TƯ - AI TRADING]
 class CONFIG:
     TRAINING_MODE = 'fast_split' # 'fast_split' or 'rolling_window'
-    # 1. PHÍ GIAO DỊCH (Transaction Cost): 
-    # Tỷ lệ phần trăm CTCK thu cho mỗi lần bạn mua hoặc bán cổ phiếu. (VD: 0.2% = 0.002)
-    COST_RATE = 0.0001
+    # 1. PHÍ GIAO DỊCH (Transaction Fee & Tax): 
+    # Ở VN, mua mất ~0.15%, bán mất ~0.15% phí + 0.1% thuế = 0.25%. Tổng vòng quay là 0.4%
+    COST_RATE = 0.001
 
     TURNOVER_PENALTY_RATE = 0.3
     DRAWDOWN_PENALTY_RATE = 5.0
@@ -195,7 +195,7 @@ class CONFIG:
 # ## Hàm này nạp dữ liệu từ file Parquet (đã chạy HMM) và chế biến thêm các chỉ báo để tạo thành 
 
 
-def load_data():
+def load_data(macro_mode=50):
     # 1. Nạp dữ liệu thô
     log("Loading Master DRL")
     raw_df = pd.read_csv(os.path.join(root_dir,"output","hmm_model" ,"master_ticker_hmm_results.csv"))
@@ -395,8 +395,51 @@ def load_data():
         return nqt.replace([np.inf, -np.inf], 0).fillna(0)
 
     # BẢNG 1: Dành cho Mạng Nơ-ron (Đã qua NQT Cross-Sectional)
+
+# NẠP DỮ LIỆU VĨ MÔ (MACRO) & DÒNG TIỀN VÀO AI
+    macro_features = []
+    
+    if macro_mode >= 47:
+        # 1. Dữ liệu Hằng ngày (Daily)
+        daily_macro_files = {
+            'fnb': 'm4_foreign_net_buy_sell.csv',
+            'vix': 'm2_vix.csv',
+            'dxy': 'g1_dxy.csv'
+        }
+        for name, filename in daily_macro_files.items():
+            filepath = os.path.join(root_dir, 'data', 'processed', filename)
+            if os.path.exists(filepath):
+                df_macro = pd.read_csv(filepath)
+                df_macro['time'] = pd.to_datetime(df_macro['time'])
+                df_macro = df_macro.set_index('time')
+                val_col = 'fnb_ratio' if name == 'fnb' else 'close'
+                series_macro = df_macro[val_col].reindex(returns_df.index).ffill().fillna(0)
+                broadcasted_df = pd.DataFrame(np.tile(series_macro.values.reshape(-1, 1), (1, weights_dim)), index=returns_df.index, columns=returns_df.columns)
+                macro_features.append(broadcasted_df)
+
+    if macro_mode >= 50:
+        # 2. Dữ liệu Hàng tháng (Monthly)
+        monthly_macro_files = {
+            'cpi': ('e8_cpi_vietnam.csv', 'cpi_yoy'),
+            'm2': ('e6_m2_vietnam.csv', 'm2_growth_yoy'),
+            'pmi': ('s3_pmi_vietnam.csv', 'pmi_vn')
+        }
+        for name, (filename, val_col) in monthly_macro_files.items():
+            filepath = os.path.join(root_dir, 'data', 'processed', filename)
+            if os.path.exists(filepath):
+                df_macro = pd.read_csv(filepath)
+                df_macro['time'] = pd.to_datetime(df_macro['time'])
+                df_macro['time'] = df_macro['time'] + pd.Timedelta(days=30)
+                df_macro = df_macro.set_index('time')
+                if val_col in df_macro.columns:
+                    series_macro = df_macro[val_col].reindex(returns_df.index).ffill().fillna(0)
+                    broadcasted_df = pd.DataFrame(np.tile(series_macro.values.reshape(-1, 1), (1, weights_dim)), index=returns_df.index, columns=returns_df.columns)
+                    macro_features.append(broadcasted_df)
+
     core_list = [prob0_df, prob1_df, prob2_df, vol_20d_df, ret_20d_df, vol_ratio_df, mkt_ret5_df, mkt_ret20_df, mkt_vol_df, dist_ma20_df, momentum_3d_df]
+    core_list.extend(macro_features)
     ai_features_df = pd.concat([apply_nqt(df) for df in core_list], axis=1).fillna(0)
+
 
     # BẢNG 2: Kho vũ khí cho kịch bản của con người (AI không được thấy)
 
@@ -432,7 +475,6 @@ def load_data():
     return returns_df, ai_features_df, strategies_features_df, weights_dim, tickers, num_strategies_features, dates
 
 
-# ## LUẬT 1, 3, 5, 6: MÔI TRƯỜNG ĐẦU TƯ (GYM ENVIRONMENT)
 
 # ## Lớp này mô phỏng lại Sàn chứng khoán. Nơi AI sẽ thử nghiệm các lệnh Mua/Bán và nhận Phạt/Thưởng (Reward).
 
@@ -641,11 +683,12 @@ class AdvancedPortfolioEnv(gym.Env):
                 reward -= (dd_increase * 3000)  # Phạt sụt giảm tài sản cực nặng (trước đây là 1000)
             self.prev_drawdown = drawdown
             force_terminate = False
-            if drawdown > 0.15: # Cháy tài khoản nếu lỗ 15% từ đỉnh (trước đây là 30%)
-                reward -= 500  # Phạt 500 điểm nếu cháy tài khoản
-                force_terminate = True
-                if getattr(self, 'is_test', False):
-                    print(f"💀 GAME OVER: Chạm ngưỡng phòng thủ! Drawdown {drawdown*100:.1f}% tại Step {self.current_step}")
+            if drawdown > 0.3: # Cháy tài khoản nếu lỗ 15% từ đỉnh (trước đây là 30%)
+                reward -= 5000  # Phạt 500 điểm nếu cháy tài khoản
+                if not getattr(self, 'is_test', False):
+                    force_terminate = True
+                else:
+                    print(f"💀 CẢNH BÁO (Internal): Chạm ngưỡng phòng thủ! Drawdown {drawdown*100:.1f}% tại Step {self.current_step}")
             # -----------------------------------------------------------
             self.current_step += 1
             done = (self.current_step >= self.n_steps - 1) or force_terminate
@@ -764,16 +807,19 @@ def run_training_cycle():
         log("\n[CURRICULUM LEARNING] Bắt đầu huấn luyện theo từng cấp độ độ trễ (T+0 -> T+1 -> T+3)...")
 
         CONFIG.T_PLUS_SETTLEMENT = 0
-        log("Giai đoạn 1: Huấn luyện với T+0 (100,000 steps)...")
-        model.learn(total_timesteps=100000, reset_num_timesteps=False)
+        n_1 = 10_000
+        log(f"Giai đoạn 1: Huấn luyện với T+0 ({n_1} steps)...")
+        model.learn(total_timesteps=n_1, reset_num_timesteps=False)
 
         CONFIG.T_PLUS_SETTLEMENT = 1
-        log("Giai đoạn 2: Huấn luyện với T+1 (100,000 steps)...")
-        model.learn(total_timesteps=100000, reset_num_timesteps=False)
+        n_2 = 10_000
+        log(f"Giai đoạn 2: Huấn luyện với T+1 ({n_2} steps)...")
+        model.learn(total_timesteps=n_2, reset_num_timesteps=False)
 
         CONFIG.T_PLUS_SETTLEMENT = 3
-        log("Giai đoạn 3: Huấn luyện với T+3 (300,000 steps)...")
-        model.learn(total_timesteps=300000, reset_num_timesteps=False)
+        n_3 = 30_000
+        log(f"Giai đoạn 3: Huấn luyện với T+3 ({n_3} steps)...")
+        model.learn(total_timesteps=n_3, reset_num_timesteps=False)
 
         model.save(os.path.join(save_dir, "AI_Brain.zip"))
         train_env.save(os.path.join(save_dir, "vec_normalize.pkl"))
@@ -904,7 +950,7 @@ def run_training_cycle():
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     old_model_name = os.path.join(save_dir, "AI_Brain.zip")
-    new_model_name = os.path.join(save_dir, f"AI_Brain_v8_Seed{seed_val}_Profit_{total_profit:.2f}.zip")
+    new_model_name = os.path.join(save_dir, f"AI_Brain_v9_Seed{seed_val}_Profit_{total_profit:.2f}.zip")
 
     if os.path.exists(old_model_name):
         shutil.copy(old_model_name, new_model_name)
@@ -939,40 +985,81 @@ def run_training_cycle():
     df.to_csv(log_file, index=False)
 
     log(f"🎯 Đã lưu log tự động cấu hình vào Leaderboard! Lợi nhuận: {total_profit:.2f}% | Model: {new_model_name}")
+    return total_profit
+
+import optuna
+
+def objective(trial):
+    global seed_val
+    seed_val = trial.suggest_int('SEED', 1, 10000)
+    
+    th.manual_seed(seed_val)
+    np.random.seed(seed_val)
+    random.seed(seed_val)
+
+    # Optuna Suggestion
+    CONFIG.SEED = seed_val
+    CONFIG.LEARNING_RATE = trial.suggest_categorical('LEARNING_RATE', [0.00001, 0.00005, 0.0001])
+    CONFIG.ENT_COEF = trial.suggest_categorical('ENT_COEF', [0.001, 0.005, 0.01, 0.1])
+    CONFIG.BATCH_SIZE = trial.suggest_categorical('BATCH_SIZE', [64, 90, 128, 256])
+    CONFIG.N_STEPS = trial.suggest_categorical('N_STEPS', [512, 1024, 2048])
+    CONFIG.FEATURES_DIM = trial.suggest_categorical('FEATURES_DIM', [64, 128, 256, 512])
+    CONFIG.SDE_SAMPLE_FREQ = trial.suggest_int('SDE_SAMPLE_FREQ', 1, 7)
+
+    log(f"\n{'='*60}")
+    log(f"🚀 THỬ NGHIỆM TPE OPTUNA | Seed: {seed_val}")
+    log(f"{'='*60}")
+    log(f"🛠️  Params: LR={CONFIG.LEARNING_RATE} | ENT={CONFIG.ENT_COEF} | BATCH={CONFIG.BATCH_SIZE} | STEPS={CONFIG.N_STEPS} | FEATURES DIMENSION={CONFIG.FEATURES_DIM} | SDE SAMPLE FREQ={CONFIG.SDE_SAMPLE_FREQ}")
+    
+    try:
+        # Run training cycle and get the profit
+        total_profit = run_training_cycle()
+        return total_profit
+    except Exception as e:
+        log(f"❌ Lỗi ở thử nghiệm Optuna: {e}")
+        traceback.print_exc()
+        # Return a very bad score if it crashes
+        return -999.0
 
 def run_auto_tuning(n_trials=10):
-    log(f"=== BẮT ĐẦU CHẠY {n_trials} THỬ NGHIỆM (AUTO TUNING) ===")
-    for i in range(n_trials):
-        global seed_val
-        seed_val = random.randint(1, 10000)
-        log(f"\n{'='*60}")
-        log(f"🚀 THỬ NGHIỆM {i+1}/{n_trials} | Seed: {seed_val}")
-        log(f"{'='*60}")
-        th.manual_seed(seed_val)
-        np.random.seed(seed_val)
-        random.seed(seed_val)
-
-        # Thay đổi các tham số ngẫu nhiên
-        CONFIG.SEED = seed_val
-        CONFIG.LEARNING_RATE = random.choice([0.00001, 0.00005, 0.0001])
-        CONFIG.ENT_COEF = random.choice([0.001, 0.005, 0.01])
-        CONFIG.BATCH_SIZE = random.choice([64, 90, 128])
-        CONFIG.N_STEPS = random.choice([512, 1024, 2048])
-        CONFIG.FEATURES_DIM = random.choice([64 ,128 ,256, 512])
-        CONFIG.SDE_SAMPLE_FREQ = random.randint(1, 5)
-        log(f"🛠️  Params: SEED={CONFIG.SEED} | LR={CONFIG.LEARNING_RATE} | ENT={CONFIG.ENT_COEF} | BATCH={CONFIG.BATCH_SIZE} | STEPS={CONFIG.N_STEPS} | FEATURES DIMENSION={CONFIG.FEATURES_DIM} | SDE SAMPLE FREQ={CONFIG.SDE_SAMPLE_FREQ}")
-        run_training_cycle()
+    log(f"=== BẮT ĐẦU CHẠY {n_trials} THỬ NGHIỆM (OPTUNA BAYESIAN OPTIMIZATION) ===")
+    study = optuna.create_study(direction="maximize")
+    study.optimize(objective, n_trials=n_trials)
+    
+    log("\n" + "="*60)
+    log("🏆 OPTUNA TÌM THẤY BỘ SIÊU THAM SỐ TỐT NHẤT:")
+    log(f"Lợi nhuận cao nhất: {study.best_value:+.2f}%")
+    log("Cấu hình:")
+    for key, value in study.best_params.items():
+        log(f"    {key}: {value}")
+    log("="*60)
 
 if __name__ == "__main__":
     returns_df, ai_features_df, strategies_features_df, weights_dim, tickers, num_strategies_features, dates = load_data()
 
-    # ==========================================
-    # CÔNG TẮC BẬT/TẮT AUTO TUNING
-    # ==========================================
-    ENABLE_AUTO_TUNING = True  # Đổi thành True để chạy N lần tự động đổi tham số
-    N_TRIALS = 10  # Số lần muốn chạy
+    import argparse
+    parser = argparse.ArgumentParser(description="AIQUANTUM PPO Training")
+    parser.add_argument('--optuna', action='store_true', help='Bật Optuna Bayesian Optimization')
+    args = parser.parse_args()
+
+    ENABLE_AUTO_TUNING = args.optuna
+    N_TRIALS = 50
 
     if ENABLE_AUTO_TUNING:
         run_auto_tuning(n_trials=N_TRIALS)
     else:
-        run_training_cycle()
+        # CHẠY 10 LẦN NGẪU NHIÊN NẾU KHÔNG DÙNG OPTUNA
+        N_RANDOM_RUNS = N_TRIALS
+        for i in range(N_RANDOM_RUNS):
+            # Cấp phát 1 seed ngẫu nhiên mới hoàn toàn cho mỗi vòng
+            seed_val = random.randint(1, 10000)
+            CONFIG.SEED = seed_val
+            th.manual_seed(seed_val)
+            np.random.seed(seed_val)
+            random.seed(seed_val)
+            
+            log(f"\n" + "="*50)
+            log(f"🎲 BẮT ĐẦU CHẠY RANDOM LẦN {i+1}/{N_RANDOM_RUNS} | SEED: {seed_val}")
+            log("="*50)
+            
+            run_training_cycle()
